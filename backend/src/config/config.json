@@ -1,0 +1,24 @@
+{
+  "reading": {
+    "satellite": "A",
+    "time_start": "2017-01-01 00:00:00",
+    "time_end": "2018-03-01 00:00:00"
+  },
+  "window_filter": {
+    "high_pass": 900,
+    "low_pass": 45
+  },
+  "frequency_filter": {
+    "bandwidth": 0.001,
+    "min_frequency": 0.0005,
+    "max_frequency": 0.0222
+  },
+  "h_parameter": {
+    "noise_e": 0.1,
+    "noise_vb": 0.1
+  },
+  "paths": {
+    "data_root": "backend/data",
+    "images_root": "backend/figures"
+  }
+}

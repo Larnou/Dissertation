@@ -1,0 +1,78 @@
+[tool.black]
+line-length = 140
+target-version = ["py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+(
+  ^/frontend/ |
+  ^/papers/ |
+  ^/wiki/ |
+  \.ipynb$
+)
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+py_version = 311
+skip_gitignore = true
+extend_skip = ["frontend", "papers", "wiki"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["frontend", "papers", "wiki"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "W",   # pycodestyle warnings
+  "I",   # isort (import sorting)
+  "B",   # flake8-bugbear
+  "UP",  # pyupgrade
+  "SIM", # flake8-simplify
+  "RUF", # ruff-specific rules
+]
+ignore = [
+  "E501", # line length handled by black
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
+[project]
+name = "frozencondition"
+version = "0.1.0"
+description = "FrozenCondition: data pipeline and analysis for THEMIS/FIC condition research."
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+authors = [{ name = "Larnou", email = "sfas921@yandex.ru" }]
+dependencies = [
+  "ipython",
+  "jupyter",
+  "notebook",
+  "pandas",
+  "numpy",
+  "scipy",
+  "xarray",
+  "python-dateutil",
+  "tqdm",
+  "cdflib",
+  "cdasws",
+  "matplotlib",
+  "pyarrow",
+  "pydantic>=2,<3",
+]
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+ruff = "*"
