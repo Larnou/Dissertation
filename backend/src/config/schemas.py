@@ -5,7 +5,8 @@ from typing import Self, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
-DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+CDAWEB_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 # --- алиасы типов / единиц измерения (для читаемости кода) ---
 Satellite = Literal["A", "B", "C", "D", "E"]
@@ -22,17 +23,18 @@ class ReadingConfig(BaseModel):
     satellite: Satellite = Field(description="Идентификатор спутника THEMIS: A–E.")
     time_start: str = Field(description="Начало интервала в формате 'YYYY-MM-DD HH:MM:SS'.")
     time_end: str = Field(description="Конец интервала в формате 'YYYY-MM-DD HH:MM:SS'.")
+    delta: str = Field(description="Шаг скачивания данных в формате значение/единица измерения")
 
     @field_validator("time_start", "time_end")
     @classmethod
     def validate_datetime_format(cls, value: str) -> str:
-        datetime.strptime(value, DATETIME_FORMAT)
+        datetime.strptime(value, TIME_FORMAT)
         return value
 
     @model_validator(mode="after")
     def validate_time_order(self) -> Self:
-        start = datetime.strptime(self.time_start, DATETIME_FORMAT)
-        end = datetime.strptime(self.time_end, DATETIME_FORMAT)
+        start = datetime.strptime(self.time_start, TIME_FORMAT)
+        end = datetime.strptime(self.time_end, TIME_FORMAT)
         if end <= start:
             message = "Field time_end must be after time_start"
             raise ValueError(message)
@@ -83,6 +85,16 @@ class PathsConfig(BaseModel):
     images_root: str = Field(description="Каталог изображений относительно корня репозитория.")
 
 
+class ResolvedPaths(BaseModel):
+    """Абсолютные пути после привязки к корню проекта."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    project_root: Path
+    data_root: Path
+    images_root: Path
+
+
 class AppConfig(BaseModel):
     """Корневая модель конфигурации приложения."""
 
@@ -92,14 +104,4 @@ class AppConfig(BaseModel):
     window_filter: WindowFilterConfig
     frequency_filter: FrequencyFilterConfig
     h_parameter: HParameterConfig
-    paths: PathsConfig = Field(default_factory=PathsConfig)
-
-
-class ResolvedPaths(BaseModel):
-    """Абсолютные пути после привязки к корню проекта."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    project_root: Path
-    data_root: Path
-    images_root: Path
+    paths: PathsConfig

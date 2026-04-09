@@ -71,6 +71,7 @@ dependencies = [
   "matplotlib",
   "pyarrow",
   "pydantic>=2,<3",
+  "loguru",
 ]
 
 [tool.poetry.group.dev.dependencies]

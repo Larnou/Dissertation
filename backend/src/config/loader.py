@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 from pathlib import Path
 
@@ -8,7 +6,7 @@ from pydantic import ValidationError
 from backend.src.config.schemas import AppConfig
 
 
-def load_app_config(*, config_path: Path | None = None) -> AppConfig:
+def load_app_config(config_path: Path | None = None) -> AppConfig:
     """
     Читает `config.json` и валидирует его через Pydantic-модели.
 
@@ -31,4 +29,3 @@ def load_app_config(*, config_path: Path | None = None) -> AppConfig:
     except ValidationError as exc:
         msg = f"Config validation failed for {path}"
         raise ValueError(msg) from exc
-
