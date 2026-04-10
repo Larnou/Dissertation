@@ -5,17 +5,44 @@ import pandas as pd
 
 
 class AvailabilityColor(str, Enum):
-    fgm = "tab:blue"
-    esa_ion = "tab:orange"
-    esa_electron = "tab:green"
-    efi = "tab:red"
-    ssc = "tab:purple"
-    sta = "tab:brown"
-    omn = "tab:pink"
+    fgm = "blue"
+    esa_ion = "orange"
+    esa_electron = "green"
+    efi = "red"
+    ssc = "purple"
+    sta = "brown"
+    omn = "pink"
+    intersections = "black"
 
 
-def _get_color(data_type: str) -> str:
+def get_availability_color(data_type: str) -> str:
     return AvailabilityColor[data_type].value
+
+
+def show_interval_spans(
+    ax: Any,
+    intervals: Any,
+    color: str,
+    alpha: float = 0.5,
+    line_style: str = "--",
+    line_width: float = 1.5,
+    zorder: int = 0,
+):
+    """
+    Draw interval boundaries as dashed vertical lines and fill between them.
+
+    Intended for Matplotlib datetime x-axis.
+    """
+    if not intervals:
+        return
+
+    if alpha < 0 or alpha > 1:
+        raise ValueError("alpha must be in [0, 1]")
+
+    for start_dt, end_dt in intervals:
+        ax.axvline(start_dt, color=color, linestyle=line_style, linewidth=line_width, alpha=alpha, zorder=zorder)
+        ax.axvline(end_dt, color=color, linestyle=line_style, linewidth=line_width, alpha=alpha, zorder=zorder)
+        ax.axvspan(start_dt, end_dt, color=color, alpha=alpha, zorder=zorder)
 
 
 
@@ -28,7 +55,7 @@ def show_overlaps(
 ):
 
     time_column: str = "Time"
-    resolved_color = _get_color(data_type=data_type)
+    resolved_color = get_availability_color(data_type=data_type)
 
     for i, interval in enumerate(intervals):
         dat = data[(data[time_column] >= interval[0]) & (data[time_column] <= interval[1])].reset_index(drop=True)

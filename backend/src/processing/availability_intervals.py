@@ -15,8 +15,6 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from matplotlib.dates import AutoDateLocator, DateFormatter
-from matplotlib.ticker import AutoMinorLocator
 from tqdm import tqdm
 
 from backend.src.processing.utils.intervals_view import (
@@ -25,9 +23,14 @@ from backend.src.processing.utils.intervals_view import (
     RULES,
     TimeInterval,
 )
+from backend.src.processing.utils.is_show_intervals import is_show_intervals
 from backend.src.processing.utils.plot_interval_settings import set_plot_interval_settings
 
-from backend.src.processing.utils.show_overlaps import show_overlaps
+from backend.src.processing.utils.show_overlaps import (
+    get_availability_color,
+    show_interval_spans,
+    show_overlaps,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,7 +39,7 @@ class AvailabilityIntervals:
     time_col: str = "Time"
     show_progress: bool = True
 
-    def from_dataframe(self, dataframe: pd.DataFrame, data_type: DataSourceKind,) -> IntervalsView:
+    def from_dataframe(self, dataframe: pd.DataFrame, data_type: DataSourceKind) -> IntervalsView:
         rule = RULES.get(data_type)
 
         working = dataframe.copy()
@@ -70,23 +73,34 @@ class AvailabilityIntervals:
 
 
     def show(self, dataframe: pd.DataFrame, intervals: IntervalsView, data_type: DataSourceKind):
-        fig, ax = plt.subplots(1, 1, figsize=(18, 7), layout="constrained", sharex=False)
 
-        show_overlaps(ax, intervals, dataframe, data_type, 1)
+        if is_show_intervals:
+            fig, ax = plt.subplots(1, 1, figsize=(18, 7), layout="constrained", sharex=False)
 
-        set_plot_interval_settings(ax, x_label="Time", y_label="Relative level units")
-        plt.show()
+            show_overlaps(ax, intervals, dataframe, data_type, 1)
+
+            set_plot_interval_settings(ax, x_label="Time", y_label="Relative level units")
+            plt.show()
 
 
     def show_intervals(self, dataframe: pd.DataFrame, intervals_list: list[dict]):
-        fig, ax = plt.subplots(1, 1, figsize=(18, 7), layout="constrained", sharex=False)
 
-        for index, interval_data in enumerate(intervals_list, start=1):
-            intervals = interval_data["intervals"]
-            data_type = interval_data["data_type"]
-            show_overlaps(ax, intervals, dataframe, data_type, index)
+        if is_show_intervals:
+            fig, ax = plt.subplots(1, 1, figsize=(18, 7), layout="constrained", sharex=False)
 
-        set_plot_interval_settings(ax, x_label="Time", y_label="Relative level units")
-        plt.show()
+            for index, interval_data in enumerate(intervals_list, start=1):
+                intervals = interval_data["intervals"]
+                data_type = interval_data["data_type"]
+                show_overlaps(ax, intervals, dataframe, data_type, index)
 
+                if data_type == "intersections":
+                    show_interval_spans(
+                        ax=ax,
+                        intervals=intervals,
+                        color=get_availability_color(data_type=data_type),
+                        alpha=0.5,
+                        zorder=0,
+                    )
 
+            set_plot_interval_settings(ax, x_label="Time", y_label="Relative level units")
+            plt.show()
