@@ -1,15 +1,16 @@
-from backend.src.processing.availability_intervals import AvailabilityIntervals
 from backend.src.processing.utils.intervals_view import (
     AvailabilityRule,
     DataSourceKind,
     IntervalsView,
+    RULES,
     TimeInterval,
 )
 
 __all__ = [
-    "AvailabilityIntervals",
     "AvailabilityRule",
     "DataSourceKind",
     "IntervalsView",
+    "RULES",
     "TimeInterval",
 ]
+

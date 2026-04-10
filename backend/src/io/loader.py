@@ -10,11 +10,12 @@ from backend.src.io.paths import event_interval_folder_name
 from backend.src.io.raw_data import RawData
 
 # Логические имена файлов (stem) внутри .../events/<даты>/THEMIS-X/
+DATASET_ELECTRIC_FIELD = "efi"
+# DATASET_PARTICLE_VELOCITY = "esa_*"
+DATASET_MAGNETIC_FIELD = "fgm"
+DATASET_OMNI = "omn"
 DATASET_SSC = "ssc"
-DATASET_MAGNETIC_FIELD = "magnetic_field"
-DATASET_ELECTRIC_FIELD = "electric_field"
-DATASET_STATE = "state"
-DATASET_OMNI = "omni"
+DATASET_STATE = "sta"
 
 
 @dataclass(init=False)
