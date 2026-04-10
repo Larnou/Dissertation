@@ -2,8 +2,8 @@
   "reading": {
     "satellite": "A",
     "time_start": "2017-01-01 00:00:00",
-    "time_end": "2017-01-01 04:00:00",
-    "delta": "1H"
+    "time_end": "2017-01-04 00:00:00",
+    "delta": "4D"
   },
   "window_filter": {
     "high_pass": 900,
