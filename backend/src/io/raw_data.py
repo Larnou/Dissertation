@@ -73,7 +73,7 @@ class RawData:
         instrument = f"TH{sat_upper}_L2_FGM"
 
         columns = [fgs_column]
-        api = CDAweb(dataset_name=instrument)
+        api = CDAweb.default(dataset_name=instrument)
 
         dataframes: list[pd.DataFrame] = []
         tqdm_borders = tqdm(time_borders, desc="FGM: скачивание пакетов", file=sys.stdout)

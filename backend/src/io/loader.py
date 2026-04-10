@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -20,84 +20,71 @@ DATASET_OMNI = "omni"
 @dataclass(init=False)
 class DataDownloading:
     """
-    Загрузка датасетов THEMIS/OMNI: с диска (parquet) или с CDAWeb.
+    Загрузка датасетов THEMIS/OMNI.
 
-    Файлы: ``backend/data/events/<YYYY-MM-DD_YYYY-MM-DD>/THEMIS-<X>/<stem>.parquet``.
+    Два низкоуровневых загрузчика: ``read_from_disk`` (parquet) и ``fetch_from_cdaweb``
+    (CDAWeb + сохранение в parquet). Методы по инструментам задают stem и вызывают один из них
+    в зависимости от ``load_from_cdaweb``.
 
-    Шаг разбиения интервала для CDAWeb — только ``config.reading.delta`` (из JSON).
-
-    Конфигурация — как в `AppConfig` (в т.ч. из `config.json`). Старый вид
-    `parameters: dict` поддерживается: передайте словарь, он будет провалидирован.
+    Шаг интервала для CDAWeb — ``config.reading.delta``.
     """
 
     config: AppConfig
+    load_from_cdaweb: bool
 
-    def __init__(self, parameters: AppConfig) -> None:
+    def __init__(self, parameters: AppConfig, load_from_cdaweb: bool) -> None:
         self.config = AppConfig.model_validate(dict(parameters))
+        self.load_from_cdaweb = load_from_cdaweb
+
 
     def format_file_name(self) -> str:
         """Сегмент папки по датам интервала (совместимость с прежним API)."""
         return event_interval_folder_name(self.config)
 
-    def get_ssc_data(self, load: bool) -> pd.DataFrame:
+
+    def read_from_disk(self, stem: str) -> pd.DataFrame:
+        """Читает ``<stem>.parquet`` из каталога события (локальный диск)."""
+        return read_data_from_parquet(self.config, stem)
+
+
+    def fetch_from_cdaweb(self, stem: str, fetch: Callable[[RawData], pd.DataFrame]) -> pd.DataFrame:
+        """
+        Скачивает данные через ``RawData``, сохраняет в ``<stem>.parquet`` и возвращает DataFrame.
+        """
+
+        raw_data = RawData(self.config)
+        dataframe = fetch(raw_data)
+
+        save_data_to_parquet(self.config, dataframe, stem)
+        return dataframe
+
+
+    def _load_by_source(self, stem: str, fetch: Callable[[RawData], pd.DataFrame]) -> pd.DataFrame:
+        if self.load_from_cdaweb:
+            return self.fetch_from_cdaweb(stem, fetch)
+        return self.read_from_disk(stem)
+
+
+    def get_ssc_data(self) -> pd.DataFrame:
         stem = DATASET_SSC
+        return self._load_by_source(stem, lambda r: r.get_ssc_dataframe())
 
-        if load:
-            return read_data_from_parquet(self.config, stem)
-
-        raw = RawData(self.config)
-        dataframe = raw.get_ssc_dataframe()
-        save_data_to_parquet(self.config, dataframe, stem, title=True)
-        return dataframe
-
-    def get_fgm_data(self, load: bool) -> pd.DataFrame:
+    def get_fgm_data(self) -> pd.DataFrame:
         stem = DATASET_MAGNETIC_FIELD
+        return self._load_by_source(stem, lambda r: r.get_fgm_dataframe())
 
-        if load:
-            return read_data_from_parquet(self.config, stem)
-
-        raw = RawData(self.config)
-        dataframe = raw.get_fgm_dataframe()
-        save_data_to_parquet(self.config, dataframe, stem, title=True)
-        return dataframe
-
-    def get_esa_data(self, load: bool, particle: Literal["ion", "electron"]) -> pd.DataFrame:
+    def get_esa_data(self, particle: Literal["ion", "electron"]) -> pd.DataFrame:
         stem = f"esa_{particle}"
+        return self._load_by_source(stem, lambda r: r.get_esa_dataframe(particle))
 
-        if load:
-            return read_data_from_parquet(self.config, stem)
-
-        raw = RawData(self.config)
-        dataframe = raw.get_esa_dataframe(particle)
-        save_data_to_parquet(self.config, dataframe, stem, title=True)
-        return dataframe
-
-    def get_efi_data(self, load: bool) -> pd.DataFrame:
+    def get_efi_data(self) -> pd.DataFrame:
         stem = DATASET_ELECTRIC_FIELD
-        if load:
-            return read_data_from_parquet(self.config, stem)
+        return self._load_by_source(stem, lambda r: r.get_efi_dataframe())
 
-        raw = RawData(self.config)
-        dataframe = raw.get_efi_dataframe()
-        save_data_to_parquet(self.config, dataframe, stem, title=True)
-        return dataframe
-
-    def get_sta_data(self, load: bool) -> pd.DataFrame:
+    def get_sta_data(self) -> pd.DataFrame:
         stem = DATASET_STATE
-        if load:
-            return read_data_from_parquet(self.config, stem)
+        return self._load_by_source(stem, lambda r: r.get_sta_dataframe())
 
-        raw = RawData(self.config)
-        dataframe = raw.get_sta_dataframe()
-        save_data_to_parquet(self.config, dataframe, stem, title=True)
-        return dataframe
-
-    def get_omn_data(self, load: bool) -> pd.DataFrame:
+    def get_omn_data(self) -> pd.DataFrame:
         stem = DATASET_OMNI
-        if load:
-            return read_data_from_parquet(self.config, stem)
-
-        raw = RawData(self.config)
-        dataframe = raw.get_omn_dataframe()
-        save_data_to_parquet(self.config, dataframe, stem, title=True)
-        return dataframe
+        return self._load_by_source(stem, lambda r: r.get_omn_dataframe())
