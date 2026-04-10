@@ -43,7 +43,15 @@ class AvailabilityIntervals:
         rule = RULES.get(data_type)
 
         working = dataframe.copy()
+        # Нормализуем время: все интервалы делаем tz-naive (UTC), иначе пересечения падают
+        # с "Cannot compare tz-naive and tz-aware timestamps".
+        working[self.time_col] = (
+            pd.to_datetime(working[self.time_col], utc=True, errors="coerce")
+            .dt.tz_convert("UTC")
+            .dt.tz_localize(None)
+        )
         working = working.dropna(subset=[rule.required_col])
+        working = working.dropna(subset=[self.time_col])
 
 
         min_hole_s = float(rule.min_hole_seconds)
@@ -58,7 +66,7 @@ class AvailabilityIntervals:
         min_delta = timedelta(seconds=min_interval_s)
         intervals: list[TimeInterval] = []
 
-        for i in tqdm(range(len(break_points) - 1), desc="Определение интервалов", file=sys.stdout, disable=False):
+        for i in tqdm(range(len(break_points) - 1), desc=f"Определение {data_type} интервалов", file=sys.stdout, disable=False):
             start_idx = int(break_points[i])
             end_exclusive = int(break_points[i + 1])
 

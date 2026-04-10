@@ -8,6 +8,8 @@ from backend.src.config.schemas import AppConfig
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
 from backend.src.io.paths import event_interval_folder_name
 from backend.src.io.raw_data import RawData
+from backend.src.io.utils.build_shue_dataset import build_shue_dataset
+from backend.src.io.utils.interpolate_omn_dataset import interpolate_omn_dataset
 
 # Логические имена файлов (stem) внутри .../events/<даты>/THEMIS-X/
 DATASET_ELECTRIC_FIELD = "efi"
@@ -88,4 +90,17 @@ class DataDownloading:
 
     def get_omn_data(self) -> pd.DataFrame:
         stem = DATASET_OMNI
-        return self._load_by_source(stem, lambda r: r.get_omn_dataframe())
+        raw_omn_dataset = self._load_by_source(stem, lambda r: r.get_omn_dataframe())
+        return interpolate_omn_dataset(omn_data=raw_omn_dataset)
+
+
+    def get_shue_data(self) -> pd.DataFrame:
+        """
+        Датасет для модели Shue, построенный из SSC и OMNI.
+
+        Возвращаемые колонки: Time, L, MLT, r.
+        """
+
+        ssc_data = self.get_ssc_data()
+        omn_data = self.get_omn_data()
+        return build_shue_dataset(ssc_data=ssc_data, omn_data=omn_data)

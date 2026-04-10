@@ -5,13 +5,15 @@ import pandas as pd
 
 
 class AvailabilityColor(str, Enum):
-    fgm = "blue"
-    esa_ion = "orange"
-    esa_electron = "green"
-    efi = "red"
-    ssc = "purple"
-    sta = "brown"
-    omn = "pink"
+    # Контрастная палитра (близкая к Tableau 10 / colorblind-friendly)
+    fgm = "#1f77b4"  # blue
+    esa_ion = "#ff7f0e"  # orange
+    esa_electron = "#2ca02c"  # green
+    efi = "#d62728"  # red
+    ssc = "#9467bd"  # purple
+    sta = "#8c564b"  # brown
+    omn = "#17becf"  # cyan
+    shue = "#e377c2"  # magenta
     intersections = "black"
 
 

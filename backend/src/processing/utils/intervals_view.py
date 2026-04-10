@@ -11,6 +11,7 @@ DataSourceKind: TypeAlias = Literal[
     "ssc",
     "sta",
     "omn",
+    "shue",
 ]
 
 TimeInterval: TypeAlias = tuple[pd.Timestamp, pd.Timestamp]
@@ -31,6 +32,10 @@ RULES: dict[DataSourceKind, AvailabilityRule] = {
     "ssc": AvailabilityRule("GSM_X", 90, 3600),
     "sta": AvailabilityRule("GSM_Vsx", 90, 3600),
     "omn": AvailabilityRule("FP", 90, 3600),
+
+    # Shue-датасет считается валидным, когда рассчитан r (и есть Time).
+    # Дыры в r обычно идут от отсутствия OMNI/SSC для мэчинга.
+    "shue": AvailabilityRule("r", 90, 3600),
 }
 
 
