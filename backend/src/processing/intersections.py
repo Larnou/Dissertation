@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import TypeAlias, TypedDict
 
+from backend.src.config import config
+from backend.src.io.paths import availability_periods_dir
+
 Interval: TypeAlias = tuple[datetime, datetime]
 
 
@@ -103,6 +106,11 @@ def intersect_many(interval_groups: Sequence[Iterable[Interval]], min_duration: 
             second_intervals=group,
             min_duration=min_duration,
         )
+
+    save_intervals_csv(
+        intervals=current,
+        output_path=availability_periods_dir(config) / "intersections_availability_periods.csv",
+    )
 
     return current
 

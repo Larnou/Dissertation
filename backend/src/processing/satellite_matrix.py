@@ -1,9 +1,8 @@
 import math
-import sys
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+from backend.src.config import progress
 
 
 class SatelliteMatrix:
@@ -28,7 +27,10 @@ class SatelliteMatrix:
         availability_matrix = np.zeros((self.lshell_range, self.radian_range), dtype = int)
 
         # Обход по каждой паре start-end в periods
-        for period in tqdm(periods, desc = f'Обработка периодов доступности данных для инструмента {self.for_instrument}', file = sys.stdout):
+        for period in progress(
+            periods,
+            desc=f"[matrix] обработка периодов доступности ({self.for_instrument})",
+        ):
             start = period[0]
             end = period[1]
 
@@ -85,7 +87,10 @@ class SatelliteMatrix:
         satellite_time_diff = self.get_time_diff(self.satellite_dataframe)
 
 
-        for i in tqdm(range(len(self.satellite_dataframe)), desc = 'Подсчёт матрицы нахождения спутника на орбите', file = sys.stdout):
+        for i in progress(
+            range(len(self.satellite_dataframe)),
+            desc="[matrix] подсчёт матрицы орбитального времени",
+        ):
             # перевод широты в правильные значения (отличается на pi)
             longitude = (self.satellite_dataframe['Longitude'][i] + 180) % 360
 

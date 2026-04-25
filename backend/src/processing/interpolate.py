@@ -1,28 +1,49 @@
 from datetime import timedelta
-import sys
 from typing import List
 
 import numpy as np
 import pandas as pd
-from loguru import logger
-from tqdm import tqdm
 
+from backend.src.config import get_logger, progress
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
 
+logger = get_logger()
 
 class DFInterpolator:
 
     def __init__(self, dataframes: list):
         self.dataframes = dataframes
 
+    @staticmethod
+    def _to_utc_naive_time(series: pd.Series) -> pd.Series:
+        """Приводит datetime-колонку к UTC tz-naive для безопасных сравнений."""
+        return (
+            pd.to_datetime(series, utc=True, errors="coerce")
+            .dt.tz_convert("UTC")
+            .dt.tz_localize(None)
+        )
 
+    @staticmethod
+    def _normalize_overlap(overlap: tuple) -> tuple[pd.Timestamp, pd.Timestamp]:
+        start = pd.to_datetime(overlap[0], utc=True, errors="coerce")
+        end = pd.to_datetime(overlap[1], utc=True, errors="coerce")
+        if pd.isna(start) or pd.isna(end):
+            raise ValueError(f"Некорректный интервал overlap: {overlap!r}")
+        return start.tz_convert("UTC").tz_localize(None), end.tz_convert("UTC").tz_localize(None)
 
     def update_dataframes_by_date(self, overlap):
         # Корректировка данных на период времени
         corrected_datasets = []
+        overlap_start, overlap_end = self._normalize_overlap(overlap)
         # Ограничение по времени для каждого датасета
         for dataframe in self.dataframes:
-            dataset = dataframe[(dataframe['Time'] >= overlap[0]) & (dataframe['Time'] <= overlap[1])].reset_index(drop=True)
+            working = dataframe.copy()
+            working["Time"] = self._to_utc_naive_time(working["Time"])
+            working = working.dropna(subset=["Time"])
+
+            dataset = working[
+                (working["Time"] >= overlap_start) & (working["Time"] <= overlap_end)
+            ].reset_index(drop=True)
             corrected_datasets.append(dataset)
 
         return corrected_datasets
@@ -91,7 +112,7 @@ class DFInterpolator:
         # Обработка интерполяции датасетов в случае обработки нескольких промежутков одновременно
         data = []
 
-        for overlap in tqdm(overlaps, desc='Интерполяция по интервалам доступности', file = sys.stdout):
+        for overlap in progress(overlaps, desc="[interpolate] интерполяция по интервалам доступности"):
             interpolated_data = self.interpolate(overlap=overlap)
             data.append(interpolated_data)
 
@@ -99,12 +120,11 @@ class DFInterpolator:
 
 
 def get_or_interpolate_data(
-        interpolate: bool = False,
-        save_to_disk: bool = True,
-        parameters: dict | None = None,
-        raw_datasets: List[pd.DataFrame] | None = None,
-        overlaps: list | None = None,
-        min_minutes: float = 25.0,
+    interpolate: bool = False,
+    parameters: dict | None = None,
+    raw_datasets: List[pd.DataFrame] | None = None,
+    overlaps: list | None = None,
+    min_minutes: float = 25.0,
 ) -> List[pd.DataFrame]:
     filename = "available_data.parquet"
 
@@ -122,7 +142,7 @@ def get_or_interpolate_data(
             f"Порог: {min_minutes} минут. Осталось датасетов: {len(data)}"
         )
 
-        if save_to_disk and data:
+        if data:
             combined = pd.concat(data).reset_index(drop=True)
             save_data_to_parquet(parameters, combined, filename)
         return data
@@ -134,8 +154,8 @@ def get_or_interpolate_data(
 
 
 def filter_datasets_by_min_duration(
-        datasets: List[pd.DataFrame],
-        min_minutes: float = 25.0,
+    datasets: List[pd.DataFrame],
+    min_minutes: float = 25.0,
 ) -> List[pd.DataFrame]:
     min_delta = timedelta(minutes=min_minutes)
     filtered = []

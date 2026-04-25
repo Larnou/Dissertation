@@ -1,17 +1,19 @@
 from datetime import timedelta
 
-from matplotlib import pyplot as plt
-
 from backend.src.config import config
+from backend.src.config import get_logger
 from backend.src.io import DataDownloading
 from backend.src.processing import AvailabilityIntervals
 from backend.src.processing.interpolate import get_or_interpolate_data
-from backend.src.processing.intersections import intersect_many, save_intervals_csv, summarize_intervals
+from backend.src.processing.intersections import intersect_many, summarize_intervals
+
+logger = get_logger()
 
 load_from_cdaweb = False
 loader = DataDownloading(config, load_from_cdaweb=load_from_cdaweb)
 
 # Загрузка данных
+logger.info(f"Загрузка данных с {'CDAweb' if load_from_cdaweb else 'диска'}:")
 ssc_data = loader.get_ssc_data()
 fgm_data = loader.get_fgm_data()
 esa_ion_data = loader.get_esa_data(particle="ion")
@@ -25,6 +27,7 @@ shue_data = loader.get_shue_data()
 # Доступность данных
 availability = AvailabilityIntervals(show_progress=True)
 
+logger.info("Получение интервалов доступности:")
 ssc_intervals = availability.from_dataframe(ssc_data, "ssc")
 fgm_intervals = availability.from_dataframe(fgm_data, "fgm")
 esa_ion_intervals = availability.from_dataframe(esa_ion_data, "esa_ion")
@@ -35,6 +38,7 @@ shue_intervals = availability.from_dataframe(shue_data, "shue")
 
 
 # Intersections
+logger.info(f"Получение общего набора доступных периодов:")
 interval_intersections = intersect_many(
     interval_groups=[
         ssc_intervals,
@@ -47,12 +51,7 @@ interval_intersections = intersect_many(
     min_duration=timedelta(hours=1),
 )
 
-save_intervals_csv(
-    intervals=interval_intersections,
-    output_path=availability.csv_output_dir / "intersections_availability_periods.csv",
-)
-
-print(summarize_intervals(interval_intersections))
+logger.info(f"Итог по пересечениям: {summarize_intervals(interval_intersections)}")
 
 
 # Интерполяция данных
@@ -60,11 +59,11 @@ print(summarize_intervals(interval_intersections))
 # Если INTERPOLATE_DATA = False загружаем данные с гуглДиска
 # Если INTERPOLATE_DATA = True выполняем новую интерпоялцию по данным
 
-INTERPOLATE_DATA = False
+INTERPOLATE_DATA = True
 
+logger.info(f"{'Загрузка интерполированных' if not INTERPOLATE_DATA else 'Интерполирование'} данных:")
 available_data = get_or_interpolate_data(
     interpolate=INTERPOLATE_DATA,
-    save_to_disk=True,
     parameters=config,
     raw_datasets=[
         ssc_data,
@@ -78,5 +77,6 @@ available_data = get_or_interpolate_data(
     min_minutes=25.0,
 )
 
-print(len(available_data))
-print(available_data[0].columns)
+logger.info(f"Количество доступных датасетов: {len(available_data)}")
+if available_data:
+    logger.info(f"Колонки первого датасета: {list(available_data[0].columns)}")

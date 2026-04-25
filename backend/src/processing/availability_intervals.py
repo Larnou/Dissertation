@@ -8,7 +8,6 @@
   `1. 2017-01-01 00:00:00+00:00 - 2017-01-04 00:00:00+00:00`
 """
 
-import sys
 from datetime import timedelta
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -16,9 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from tqdm import tqdm
-
-from backend.src.config import config
+from backend.src.config import config, progress
 from backend.src.io.paths import availability_periods_csv_path, availability_periods_dir
 from backend.src.processing.utils.intervals_view import (
     DataSourceKind,
@@ -70,7 +67,11 @@ class AvailabilityIntervals:
         min_delta = timedelta(seconds=min_interval_s)
         intervals: list[TimeInterval] = []
 
-        for i in tqdm(range(len(break_points) - 1), desc=f"Определение {data_type} интервалов", file=sys.stdout, disable=False):
+        for i in progress(
+            range(len(break_points) - 1),
+            desc=f"[availability] {data_type}: определение интервалов",
+            disable=not self.show_progress,
+        ):
             start_idx = int(break_points[i])
             end_exclusive = int(break_points[i + 1])
 

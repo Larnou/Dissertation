@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from cdasws import CdasWs
-from loguru import logger
+from backend.src.config import get_logger
+
+logger = get_logger()
 
 
 @dataclass(frozen=True, slots=True)
