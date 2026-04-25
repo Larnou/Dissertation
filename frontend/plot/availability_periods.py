@@ -54,29 +54,14 @@ interval_intersections = intersect_many(
 logger.info(f"Итог по пересечениям: {summarize_intervals(interval_intersections)}")
 
 
-# Интерполяция данных
-# Интерполяция, сохранение и загрузка получившихся данных
-# Если INTERPOLATE_DATA = False загружаем данные с гуглДиска
-# Если INTERPOLATE_DATA = True выполняем новую интерпоялцию по данным
 
-INTERPOLATE_DATA = False
+intervals_list = [
+    {'intervals': ssc_intervals, "data_type": "ssc"},
+    {'intervals': fgm_intervals, "data_type": "fgm"},
+    {'intervals': esa_ion_intervals, "data_type": "esa_ion"},
+    {'intervals': efi_intervals, "data_type": "efi"},
+    {'intervals': sta_intervals, "data_type": "sta"},
+    {'intervals': interval_intersections, "data_type": "intersections"},
+]
 
-logger.info(f"{'Загрузка интерполированных' if not INTERPOLATE_DATA else 'Интерполирование'} данных:")
-available_data = get_or_interpolate_data(
-    interpolate=INTERPOLATE_DATA,
-    parameters=config,
-    raw_datasets=[
-        ssc_data,
-        fgm_data,
-        esa_ion_data,
-        efi_data,
-        sta_data,
-        shue_data,
-    ],
-    overlaps=interval_intersections,
-    min_minutes=25.0,
-)
-
-logger.info(f"Количество доступных датасетов: {len(available_data)}")
-if available_data:
-    logger.info(f"Колонки первого датасета: {list(available_data[0].columns)}")
+availability.show_intervals(ssc_data, intervals_list)

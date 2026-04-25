@@ -99,12 +99,6 @@ class DFInterpolator:
         # Считаем значение МЛТ, для упрощения подсчётов в будущем
         data['MLT'] = ((np.array(list(data['Longitude'])) + 180) % 360) / 15
 
-
-        # ===============
-        # Уменьшаем количество индексов, так как они негативно влияют на данные
-        # listy = list(fgm_data['Time'])
-        # data = data.loc[data['Time'].isin(listy)]
-
         return data.reset_index(drop=True)
 
 

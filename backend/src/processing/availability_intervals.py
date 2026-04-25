@@ -101,22 +101,21 @@ class AvailabilityIntervals:
 
 
     def show_intervals(self, dataframe: pd.DataFrame, intervals_list: list[dict]):
-        if is_show_intervals:
-            fig, ax = plt.subplots(1, 1, figsize=(18, 7), layout="constrained", sharex=False)
+        fig, ax = plt.subplots(1, 1, figsize=(18, 7), layout="constrained", sharex=False)
 
-            for index, interval_data in enumerate(intervals_list, start=1):
-                intervals = interval_data["intervals"]
-                data_type = interval_data["data_type"]
-                show_overlaps(ax, intervals, dataframe, data_type, index)
+        for index, interval_data in enumerate(intervals_list, start=1):
+            intervals = interval_data["intervals"]
+            data_type = interval_data["data_type"]
+            show_overlaps(ax, intervals, dataframe, data_type, index)
 
-                if data_type == "intersections":
-                    show_interval_spans(
-                        ax=ax,
-                        intervals=intervals,
-                        color=get_availability_color(data_type=data_type),
-                        alpha=0.5,
-                        zorder=0,
-                    )
+            if data_type == "intersections":
+                show_interval_spans(
+                    ax=ax,
+                    intervals=intervals,
+                    color=get_availability_color(data_type=data_type),
+                    alpha=0.5,
+                    zorder=0,
+                )
 
-            set_plot_interval_settings(ax, x_label="Time", y_label="Relative level units")
-            plt.show()
+        set_plot_interval_settings(ax, x_label="Time", y_label="Relative level units")
+        plt.show()
