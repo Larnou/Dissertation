@@ -10,13 +10,16 @@
 
 import sys
 from datetime import timedelta
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
+from backend.src.config import config
+from backend.src.io.paths import availability_periods_csv_path, availability_periods_dir
 from backend.src.processing.utils.intervals_view import (
     DataSourceKind,
     IntervalsView,
@@ -31,6 +34,7 @@ from backend.src.processing.utils.show_overlaps import (
     show_interval_spans,
     show_overlaps,
 )
+from backend.src.processing.intersections import save_intervals_csv
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +42,7 @@ class AvailabilityIntervals:
 
     time_col: str = "Time"
     show_progress: bool = True
+    csv_output_dir: Path = field(default_factory=lambda: availability_periods_dir(config))
 
     def from_dataframe(self, dataframe: pd.DataFrame, data_type: DataSourceKind) -> IntervalsView:
         rule = RULES.get(data_type)
@@ -52,7 +57,6 @@ class AvailabilityIntervals:
         )
         working = working.dropna(subset=[rule.required_col])
         working = working.dropna(subset=[self.time_col])
-
 
         min_hole_s = float(rule.min_hole_seconds)
         min_interval_s = float(rule.min_interval_seconds)
@@ -77,11 +81,15 @@ class AvailabilityIntervals:
             if interval_duration >= min_delta:
                 intervals.append((start, end))
 
+        save_intervals_csv(
+            intervals=intervals,
+            output_path=availability_periods_csv_path(config=config, source_stem=data_type),
+        )
+
         return IntervalsView(tuple(intervals))
 
 
     def show(self, dataframe: pd.DataFrame, intervals: IntervalsView, data_type: DataSourceKind):
-
         if is_show_intervals:
             fig, ax = plt.subplots(1, 1, figsize=(18, 7), layout="constrained", sharex=False)
 
@@ -92,7 +100,6 @@ class AvailabilityIntervals:
 
 
     def show_intervals(self, dataframe: pd.DataFrame, intervals_list: list[dict]):
-
         if is_show_intervals:
             fig, ax = plt.subplots(1, 1, figsize=(18, 7), layout="constrained", sharex=False)
 

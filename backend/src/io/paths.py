@@ -7,6 +7,7 @@ from backend.src.config.schemas import AppConfig, TIME_FORMAT
 
 EVENTS_DIRNAME = "events"
 THEMIS_PREFIX = "THEMIS"
+AVAILABLE_DATA_PERIODS_DIRNAME = "available_data_periods"
 
 
 def project_root() -> Path:
@@ -65,3 +66,25 @@ def parquet_dataset_path(config: AppConfig, dataset_stem: str) -> Path:
     """
     stem = normalize_dataset_stem(dataset_stem)
     return (dataset_events_dir(config) / f"{stem}.parquet").resolve()
+
+
+def availability_periods_dir(config: AppConfig) -> Path:
+    """
+    Каталог CSV с периодами доступности:
+    `.../events/<интервал>/available_data_periods/`.
+    """
+    return (
+        events_root(config)
+        / event_interval_folder_name(config)
+        / AVAILABLE_DATA_PERIODS_DIRNAME
+    ).resolve()
+
+
+def availability_periods_csv_path(config: AppConfig, source_stem: str) -> Path:
+    """
+    Полный путь к CSV с периодами доступности источника, например::
+
+        backend/data/events/2017-01-01_2017-01-04/available_data_periods/fgm_availability_periods.csv
+    """
+    stem = normalize_dataset_stem(source_stem)
+    return (availability_periods_dir(config) / f"{stem}_availability_periods.csv").resolve()

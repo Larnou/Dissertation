@@ -1,7 +1,7 @@
-from __future__ import annotations
-
+import csv
 from collections.abc import Iterable, Sequence
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import TypeAlias, TypedDict
 
 Interval: TypeAlias = tuple[datetime, datetime]
@@ -120,3 +120,26 @@ def summarize_intervals(intervals: Sequence[Interval]) -> IntervalsSummary:
         "first": intervals[0],
         "last": intervals[-1],
     }
+
+
+def save_intervals_csv(intervals: Sequence[Interval], output_path: str | Path) -> Path:
+    """
+    Save intervals to CSV with unified columns:
+    start, end, duration_seconds.
+    """
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    with destination.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(["start", "end", "duration_seconds"])
+        for start_dt, end_dt in intervals:
+            writer.writerow(
+                [
+                    start_dt.isoformat(),
+                    end_dt.isoformat(),
+                    (end_dt - start_dt).total_seconds(),
+                ]
+            )
+
+    return destination
