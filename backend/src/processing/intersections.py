@@ -83,7 +83,7 @@ def intersect_two(first_intervals: Sequence[Interval], second_intervals: Sequenc
     return overlaps
 
 
-def intersect_many(interval_groups: Sequence[Iterable[Interval]], min_duration: timedelta = timedelta(0)) -> list[Interval]:
+def intersect_many(interval_groups: Sequence[Iterable[Interval]] | None, min_duration: timedelta = timedelta(0)) -> list[Interval]:
     """
     Intersect N groups of intervals.
 

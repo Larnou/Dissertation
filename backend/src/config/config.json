@@ -6,8 +6,8 @@
     "delta": "4D"
   },
   "window_filter": {
-    "high_pass": 900,
-    "low_pass": 45
+    "low_pass": 600,
+    "high_pass": 45
   },
   "frequency_filter": {
     "bandwidth": 0.001,

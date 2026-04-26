@@ -42,12 +42,29 @@ class ReadingConfig(BaseModel):
 
 
 class WindowFilterConfig(BaseModel):
-    """Параметры оконного фильтра (временные окна/константы)."""
+    """
+    Длительности периода колебаний (секунды), на которых строятся окна свёртки.
+
+    Не DSP-термины: «низкая» сторона — длинный период (широкое окно), «высокая» — короткий период (узкое окно).
+    Ожидается low_pass > high_pass (например 600 и 45).
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    high_pass: Seconds = Field(ge=1, description="Верхнее окно/граница (сек).")
-    low_pass: Seconds = Field(ge=1, description="Нижнее окно/граница (сек).")
+    low_pass: Seconds = Field(
+        ge=1,
+        description="Длительность периода для низкочастотной (широкой) ветви фильтрации, сек.",
+    )
+    high_pass: Seconds = Field(
+        ge=1,
+        description="Длительность периода для высокочастотной (узкой) ветви и окна скользящего среднего в FAH, сек.",
+    )
+
+    @model_validator(mode="after")
+    def validate_period_order(self) -> Self:
+        if self.low_pass < self.high_pass:
+            raise ValueError("window_filter: low_pass должен быть больше high_pass (длинный период > короткий).")
+        return self
 
 
 class FrequencyFilterConfig(BaseModel):

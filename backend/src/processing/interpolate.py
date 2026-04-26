@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from backend.src.config import get_logger, progress
+from backend.src.config import get_logger, progress, AppConfig
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
 
 logger = get_logger()
@@ -70,8 +70,12 @@ class DFInterpolator:
         data = self.set_time_column(corrected_datasets)
 
         # Объединяем датафреймы к колонке со временем
-        for dataset in corrected_datasets:
-            data = pd.merge(left=data, right=dataset, on='Time', how='left')
+        for index, dataset in enumerate(corrected_datasets):
+            working_dataset = dataset
+            if index > 0 and "L" in working_dataset.columns:
+                # Сохраняем L только из первого датасета (ssc_data), чтобы не получать L_x/L_y.
+                working_dataset = working_dataset.drop(columns=["L"])
+            data = pd.merge(left=data, right=working_dataset, on='Time', how='left')
 
         return data
 
@@ -114,8 +118,8 @@ class DFInterpolator:
 
 
 def get_or_interpolate_data(
-    interpolate: bool = False,
-    parameters: dict | None = None,
+    interpolate: bool,
+    parameters: AppConfig,
     raw_datasets: List[pd.DataFrame] | None = None,
     overlaps: list | None = None,
     min_minutes: float = 25.0,
