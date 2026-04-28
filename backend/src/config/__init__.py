@@ -1,4 +1,6 @@
-"""Конфигурация проекта: схемы и загрузка JSON."""
+"""
+Конфигурация проекта: схемы и загрузка JSON.
+"""
 
 from backend.src.config.loader import load_app_config
 from backend.src.config.logging import get_logger, progress, setup_logging

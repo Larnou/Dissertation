@@ -16,7 +16,9 @@ Millivolt_per_meter = float
 
 
 class ReadingConfig(BaseModel):
-    """Параметры выборки по времени и спутнику (чтение / скачивание)."""
+    """
+    Параметры выборки по времени и спутнику (чтение / скачивание).
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -28,15 +30,34 @@ class ReadingConfig(BaseModel):
     @field_validator("time_start", "time_end")
     @classmethod
     def validate_datetime_format(cls, value: str) -> str:
+        """
+        Проверка валидации введённой даты.
+
+        Args:
+            value: Строка во вводимом формате.
+
+        Returns:
+            Изначальную строку с датой
+        """
+
         datetime.strptime(value, TIME_FORMAT)
         return value
 
     @model_validator(mode="after")
     def validate_time_order(self) -> Self:
+        """
+        Валидация того, что была правильно введена дата.
+
+        Время начала скачивания данных должно идти раньше времени оканчания скачивания данных.
+
+        Returns:
+            Если проверка прошла успешно, возвращает отвадированный объект.
+        """
         start = datetime.strptime(self.time_start, TIME_FORMAT)
         end = datetime.strptime(self.time_end, TIME_FORMAT)
+
         if end <= start:
-            message = "Field time_end must be after time_start"
+            message = f"Field time_end={end} must be after time_start={start}"
             raise ValueError(message)
         return self
 
@@ -45,7 +66,7 @@ class WindowFilterConfig(BaseModel):
     """
     Длительности периода колебаний (секунды), на которых строятся окна свёртки.
 
-    Не DSP-термины: «низкая» сторона — длинный период (широкое окно), «высокая» — короткий период (узкое окно).
+    Low_pass отвечает за низкочастотную фильтрацию, high_pass за высокочастотную фильтрацию.
     Ожидается low_pass > high_pass (например 600 и 45).
     """
 
@@ -62,30 +83,51 @@ class WindowFilterConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_period_order(self) -> Self:
+        """
+        Валидация правильного размера окна для оконных фильтров. Низкочастотный должен иметь больший период.
+
+        Returns:
+            В случае успешной валидации возвращает валидированный объект.
+        """
+
         if self.low_pass < self.high_pass:
-            raise ValueError("window_filter: low_pass должен быть больше high_pass (длинный период > короткий).")
+            message = f"Low_pass={self.low_pass} должен быть больше high_pass={self.high_pass} (длинный период > короткий)."
+            raise ValueError(message)
         return self
 
 
 class FrequencyFilterConfig(BaseModel):
-    """Параметры частотного фильтра (Hz)."""
+    """
+    Параметры частотного полосового фильтра (Hz).
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     bandwidth: Herz = Field(gt=0.0)
-    min_frequency: Herz = Field(ge=0.0)
+    min_frequency: Herz = Field(gt=0.0)
     max_frequency: Herz = Field(gt=0.0)
 
     @model_validator(mode="after")
     def validate_frequency_range(self) -> Self:
+        """
+        Валидация полосового частотного фильтра.
+
+        Границы фильтра должны быть между min_frequency и max_frequency.
+
+        Returns:
+            В случае успешной валидации возвращает валидированный объект.
+        """
+
         if self.max_frequency < self.min_frequency:
-            message = "Filed max_frequency must be >= min_frequency"
+            message = f"Filed max_frequency={self.max_frequency} must be >= min_frequency={self.min_frequency}"
             raise ValueError(message)
         return self
 
 
 class HParameterConfig(BaseModel):
-    """Параметры для расчёта/нормализации (шумы)."""
+    """
+    Параметры для расчёта/нормализации определения параметра Н с учётом фонового шума.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -103,7 +145,9 @@ class PathsConfig(BaseModel):
 
 
 class ResolvedPaths(BaseModel):
-    """Абсолютные пути после привязки к корню проекта."""
+    """
+    Абсолютные пути после привязки к корню проекта.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -113,7 +157,9 @@ class ResolvedPaths(BaseModel):
 
 
 class AppConfig(BaseModel):
-    """Корневая модель конфигурации приложения."""
+    """
+    Корневая модель конфигурации приложения.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 

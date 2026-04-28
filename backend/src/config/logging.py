@@ -1,12 +1,13 @@
-"""Единая конфигурация логирования и прогресс-баров."""
-
-from __future__ import annotations
+"""
+Единая конфигурация логирования и прогресс-баров.
+"""
 
 import sys
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 from typing import Any, TypeVar
 
 from loguru import logger
+from tqdm.asyncio import tqdm_asyncio
 from tqdm.auto import tqdm
 
 T = TypeVar("T")
@@ -29,29 +30,30 @@ TQDM_DEFAULTS: dict[str, Any] = {
 
 
 def setup_logging(level: str = "INFO") -> None:
-    """Настраивает единый формат loguru для всего проекта."""
+    """
+    Настраивает единый формат loguru для всего проекта.
+    """
+
     global _IS_CONFIGURED
     if _IS_CONFIGURED:
         return
 
     logger.remove()
-    logger.add(
-        sys.stdout,
-        level=level,
-        format=LOG_FORMAT,
-        backtrace=False,
-        diagnose=False,
-    )
+    logger.add(sys.stdout, level=level, format=LOG_FORMAT, backtrace=False, diagnose=False)
+
     _IS_CONFIGURED = True
 
 
 def get_logger():
-    """Возвращает сконфигурированный logger."""
+    """
+    Возвращает сконфигурированный logger.
+    """
+
     setup_logging()
     return logger
 
 
-def progress(iterable: Iterable[T], desc: str, **kwargs: Any) -> Iterator[T]:
+def progress(iterable: Iterable[T], desc: str, **kwargs: Any) -> tqdm_asyncio[T]:
     """
     Единый progress-bar для долгих операций.
 
