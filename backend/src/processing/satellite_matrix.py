@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 import pandas as pd
-from backend.src.config import progress
+from backend.src.config import progress_bar
 
 
 class SatelliteMatrix:
@@ -27,7 +27,7 @@ class SatelliteMatrix:
         availability_matrix = np.zeros((self.lshell_range, self.radian_range), dtype = int)
 
         # Обход по каждой паре start-end в periods
-        for period in progress(
+        for period in progress_bar(
             periods,
             desc=f"[matrix] обработка периодов доступности ({self.for_instrument})",
         ):
@@ -87,7 +87,7 @@ class SatelliteMatrix:
         satellite_time_diff = self.get_time_diff(self.satellite_dataframe)
 
 
-        for i in progress(
+        for i in progress_bar(
             range(len(self.satellite_dataframe)),
             desc="[matrix] подсчёт матрицы орбитального времени",
         ):

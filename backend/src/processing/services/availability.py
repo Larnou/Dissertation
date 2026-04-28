@@ -4,7 +4,7 @@ from datetime import timedelta
 import numpy as np
 import pandas as pd
 
-from backend.src.config import progress
+from backend.src.config import progress_bar
 from backend.src.config.schemas import AppConfig
 from backend.src.processing.io.intervals_storage import save_source_periods
 from backend.src.processing.utils.intervals_view import (
@@ -51,7 +51,7 @@ class AvailabilityService:
         min_delta = timedelta(seconds=min_interval_s)
         intervals: list[TimeInterval] = []
 
-        for i in progress(
+        for i in progress_bar(
             range(len(break_points) - 1),
             desc=f"[availability] {data_type}: определение интервалов",
             disable=not self.show_progress,

@@ -31,13 +31,13 @@ class ReadingConfig(BaseModel):
     @classmethod
     def validate_datetime_format(cls, value: str) -> str:
         """
-        Проверка валидации введённой даты.
+        Проверяет формат даты и времени.
 
         Args:
-            value: Строка во вводимом формате.
+            value: Строка в формате ``YYYY-MM-DD HH:MM:SS``.
 
         Returns:
-            Изначальную строку с датой
+            Исходная строка при успешной валидации.
         """
 
         datetime.strptime(value, TIME_FORMAT)
@@ -46,12 +46,11 @@ class ReadingConfig(BaseModel):
     @model_validator(mode="after")
     def validate_time_order(self) -> Self:
         """
-        Валидация того, что была правильно введена дата.
-
-        Время начала скачивания данных должно идти раньше времени оканчания скачивания данных.
+        Проверяет корректный порядок временных границ.
+        Время окончания должно быть строго позже времени начала.
 
         Returns:
-            Если проверка прошла успешно, возвращает отвадированный объект.
+            Валидированный экземпляр конфигурации.
         """
         start = datetime.strptime(self.time_start, TIME_FORMAT)
         end = datetime.strptime(self.time_end, TIME_FORMAT)
@@ -84,10 +83,11 @@ class WindowFilterConfig(BaseModel):
     @model_validator(mode="after")
     def validate_period_order(self) -> Self:
         """
-        Валидация правильного размера окна для оконных фильтров. Низкочастотный должен иметь больший период.
+        Проверяет согласованность периодов оконных фильтров.
+        Низкочастотная ветвь должна иметь больший период, чем высокочастотная.
 
         Returns:
-            В случае успешной валидации возвращает валидированный объект.
+            Валидированный экземпляр конфигурации.
         """
 
         if self.low_pass < self.high_pass:
@@ -110,12 +110,11 @@ class FrequencyFilterConfig(BaseModel):
     @model_validator(mode="after")
     def validate_frequency_range(self) -> Self:
         """
-        Валидация полосового частотного фильтра.
-
-        Границы фильтра должны быть между min_frequency и max_frequency.
+        Проверяет корректность диапазона полосового фильтра.
+        Верхняя граница должна быть не меньше нижней.
 
         Returns:
-            В случае успешной валидации возвращает валидированный объект.
+            Валидированный экземпляр конфигурации.
         """
 
         if self.max_frequency < self.min_frequency:

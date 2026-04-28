@@ -1,9 +1,10 @@
 """
 Конфигурация проекта: схемы и загрузка JSON.
 """
+from functools import lru_cache
 
 from backend.src.config.loader import load_app_config
-from backend.src.config.logging import get_logger, progress, setup_logging
+from backend.src.config.logging import get_logger, progress_bar, setup_logging
 from backend.src.config.schemas import (
     AppConfig,
     FrequencyFilterConfig,
@@ -13,8 +14,10 @@ from backend.src.config.schemas import (
     WindowFilterConfig,
 )
 
-setup_logging()
-config = load_app_config()
+
+@lru_cache(maxsize=1)
+def get_config() -> AppConfig:
+    return load_app_config()
 
 __all__ = [
     "AppConfig",
@@ -23,9 +26,8 @@ __all__ = [
     "PathsConfig",
     "ReadingConfig",
     "WindowFilterConfig",
-    "config",
     "get_logger",
     "load_app_config",
-    "progress",
+	"progress_bar",
     "setup_logging",
 ]

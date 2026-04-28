@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 import pandas as pd
 
-from backend.src.config import AppConfig, progress
+from backend.src.config import AppConfig, progress_bar
 from backend.src.physics.field_alligned_h import FAHCalculator
 from backend.src.processing.filters import DataFiltration
 
@@ -90,7 +90,7 @@ def build_prepared_datasets(
 ) -> list[pd.DataFrame]:
     prepared_datasets: list[pd.DataFrame] = []
 
-    for dataset in progress(datasets, desc=desc):
+    for dataset in progress_bar(datasets, desc=desc):
         prepared = build_prepared_dataset(dataset, config, use_noise=use_noise)
         if prepared.empty:
             continue

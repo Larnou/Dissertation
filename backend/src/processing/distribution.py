@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Literal
 import numpy as np
 import pandas as pd
 
-from backend.src.config import AppConfig, progress
+from backend.src.config import AppConfig, progress_bar
 
 Reducer = Literal["mean", "std", "median", "q25", "q75"]
 Grid = list[list[list[float]]]
@@ -54,7 +54,7 @@ class Distributions:
         ga = self._empty_grid()
         gr = self._empty_grid()
 
-        for dataset in progress(datasets, desc="[distribution] расчёт H/G распределений"):
+        for dataset in progress_bar(datasets, desc="[distribution] расчёт H/G распределений"):
             if dataset.empty:
                 continue
 

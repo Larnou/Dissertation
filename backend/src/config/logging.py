@@ -7,16 +7,14 @@ from collections.abc import Iterable
 from datetime import datetime, timezone
 from typing import Any, TypeVar
 
-from loguru import logger
+from loguru import Logger, logger
 from tqdm.auto import tqdm
 
 T = TypeVar("T")
 
-_IS_CONFIGURED = False
-
 LOG_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-    "<level>{level: <4}</level> | "
+    "<level>{level: <7}</level> | "
     "<level>{message}</level>"
 )
 
@@ -29,7 +27,11 @@ TQDM_DEFAULTS: dict[str, Any] = {
 }
 
 
-def tqdm_like_log_desc(desc: str) -> str:
+def format_progress_description(desc: str) -> str:
+    """
+    Формирует описание progress-бара в стиле строки лога.
+    """
+
     timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     return f"{timestamp} | INFO | {desc}"
 
@@ -39,37 +41,38 @@ def setup_logging(level: str = "INFO") -> None:
     Настраивает единый формат loguru для всего проекта.
     """
 
-    global _IS_CONFIGURED
-    if _IS_CONFIGURED:
-        return
-
+    normalized_level = level.strip().upper()
     logger.remove()
-    logger.add(sys.stdout, level=level, format=LOG_FORMAT, backtrace=False, diagnose=False)
+    logger.add(
+        sys.stdout,
+        level=normalized_level,
+        format=LOG_FORMAT,
+        backtrace=False,
+        diagnose=False,
+    )
 
-    _IS_CONFIGURED = True
 
-
-def get_logger():
+def get_logger() -> Logger:
     """
     Возвращает сконфигурированный logger.
     """
 
-    setup_logging()
     return logger
 
 
-def progress(iterable: Iterable[T], desc: str, **kwargs: Any):
+def progress_bar(iterable: Iterable[T], desc: str, **kwargs: Any) -> tqdm:
     """
     Единый progress-bar для долгих операций.
 
     Использование:
-        for item in progress(items, desc="Загрузка"):
+        for item in progress_bar(items, desc="Загрузка"):
             ...
     """
+
     setup_logging()
     options = {**TQDM_DEFAULTS, **kwargs}
     options.setdefault(
         "bar_format",
         "{desc} - {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]",
     )
-    return tqdm(iterable, desc=tqdm_like_log_desc(desc), **options)
+    return tqdm(iterable, desc=format_progress_description(desc), **options)

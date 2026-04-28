@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from backend.src.config import get_logger, progress, AppConfig
+from backend.src.config import get_logger, progress_bar, AppConfig
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
 
 logger = get_logger()
@@ -110,7 +110,7 @@ class DFInterpolator:
         # Обработка интерполяции датасетов в случае обработки нескольких промежутков одновременно
         data = []
 
-        for overlap in progress(overlaps, desc="[interpolate] интерполяция по интервалам доступности"):
+        for overlap in progress_bar(overlaps, desc="[interpolate] интерполяция по интервалам доступности"):
             interpolated_data = self.interpolate(overlap=overlap)
             data.append(interpolated_data)
 

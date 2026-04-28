@@ -4,7 +4,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-from backend.src.config import progress
+from backend.src.config import progress_bar
 from backend.src.config.schemas import AppConfig
 from backend.src.io.cdaweb import CDAweb
 from backend.src.io.utils.format_time_borders import format_time_borders
@@ -43,7 +43,7 @@ class RawData:
         api = CDAweb.default(dataset_name=instrument)
 
         dataframes: list[pd.DataFrame] = []
-        tqdm_borders = progress(time_borders, desc="[raw] EFI: скачивание пакетов")
+        tqdm_borders = progress_bar(time_borders, desc="[raw] EFI: скачивание пакетов")
         for border in tqdm_borders:
             data = api.get_dataset(columns, border["start"], border["end"])
             ef = np.array(data[efield_column].data).transpose()
@@ -75,7 +75,7 @@ class RawData:
         api = CDAweb.default(dataset_name=instrument)
 
         dataframes: list[pd.DataFrame] = []
-        tqdm_borders = progress(time_borders, desc="[raw] FGM: скачивание пакетов")
+        tqdm_borders = progress_bar(time_borders, desc="[raw] FGM: скачивание пакетов")
         for border in tqdm_borders:
             data = api.get_dataset(columns, border["start"], border["end"])
             bf = np.asarray(data[fgs_column].data).transpose()
@@ -112,7 +112,7 @@ class RawData:
         api = CDAweb.default(dataset_name=instrument)
 
         dataframes: list[pd.DataFrame] = []
-        tqd = progress(time_borders, desc=f"[raw] ESA({particle}): скачивание пакетов")
+        tqd = progress_bar(time_borders, desc=f"[raw] ESA({particle}): скачивание пакетов")
         for border in tqd:
             data = api.get_dataset([vel_column], border["start"], border["end"])
             velocity = np.asarray(data[vel_column].data).transpose()
@@ -143,7 +143,7 @@ class RawData:
         api = CDAweb.default(dataset_name=instrument)
 
         dataframes: list[pd.DataFrame] = []
-        tqd = progress(time_borders, desc="[raw] SSC: скачивание пакетов")
+        tqd = progress_bar(time_borders, desc="[raw] SSC: скачивание пакетов")
         for border in tqd:
             data = api.get_dataset(columns, border["start"], border["end"])
             xyz = np.asarray(data[coordinates].data).transpose()
@@ -178,7 +178,7 @@ class RawData:
         api = CDAweb.default(dataset_name=instrument)
 
         dataframes: list[pd.DataFrame] = []
-        tqd = progress(time_borders, desc="[raw] STA: скачивание пакетов")
+        tqd = progress_bar(time_borders, desc="[raw] STA: скачивание пакетов")
         for border in tqd:
             data = api.get_dataset(columns, border["start"], border["end"])
             vel = np.asarray(data[satellite_velocity].data).transpose()
@@ -207,7 +207,7 @@ class RawData:
         api = CDAweb.default(dataset_name=instrument)
 
         dataframes: list[pd.DataFrame] = []
-        tqd = progress(time_borders, desc="[raw] OMNI: скачивание пакетов")
+        tqd = progress_bar(time_borders, desc="[raw] OMNI: скачивание пакетов")
         for border in tqd:
             data = api.get_dataset(columns, border["start"], border["end"])
 
