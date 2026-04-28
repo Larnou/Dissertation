@@ -11,11 +11,7 @@ def data_file_path(config: AppConfig, dataset_stem: str) -> Path:
     return PathResolver(config).data_file(dataset_stem)
 
 
-def split_dataframe_by_time_gaps(
-    dataframe: pd.DataFrame,
-    time_column: str = "Time",
-    gap_seconds: int = 12,
-) -> list[pd.DataFrame]:
+def split_dataframe_by_time_gaps(dataframe: pd.DataFrame, time_column: str = "Time", gap_seconds: int = 12) -> list[pd.DataFrame]:
     if dataframe.empty:
         return []
 
@@ -28,11 +24,7 @@ def split_dataframe_by_time_gaps(
     ]
 
 
-def read_data_from_parquet(
-    config: AppConfig,
-    dataset_stem: str,
-    read_as_list: bool = False,
-) -> pd.DataFrame | list[pd.DataFrame]:
+def read_data_from_parquet(config: AppConfig, dataset_stem: str, read_as_list: bool = False) -> pd.DataFrame | list[pd.DataFrame]:
     path = PathResolver(config).data_file(dataset_stem)
     dataframe = pd.read_parquet(path)
 

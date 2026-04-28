@@ -4,10 +4,10 @@
 
 import sys
 from collections.abc import Iterable
+from datetime import datetime, timezone
 from typing import Any, TypeVar
 
 from loguru import logger
-from tqdm.asyncio import tqdm_asyncio
 from tqdm.auto import tqdm
 
 T = TypeVar("T")
@@ -27,6 +27,11 @@ TQDM_DEFAULTS: dict[str, Any] = {
     "mininterval": 0.1,
     "file": sys.stdout,
 }
+
+
+def tqdm_like_log_desc(desc: str) -> str:
+    timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    return f"{timestamp} | INFO | {desc}"
 
 
 def setup_logging(level: str = "INFO") -> None:
@@ -63,4 +68,8 @@ def progress(iterable: Iterable[T], desc: str, **kwargs: Any):
     """
     setup_logging()
     options = {**TQDM_DEFAULTS, **kwargs}
-    return tqdm(iterable, desc=desc, **options)
+    options.setdefault(
+        "bar_format",
+        "{desc} - {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]",
+    )
+    return tqdm(iterable, desc=tqdm_like_log_desc(desc), **options)

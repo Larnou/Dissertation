@@ -22,6 +22,7 @@
     "data": "backend/data/events",
     "periods": "backend/data/events",
     "matrices": "backend/data/events",
-    "images": "frontend/images"
+    "images": "frontend/images",
+    "distributions": "backend/data/events"
   }
 }

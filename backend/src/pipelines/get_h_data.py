@@ -7,7 +7,6 @@ from backend.src.io import DataDownloading
 from backend.src.io.parquet import data_file_path, save_data_to_parquet
 from backend.src.processing import AvailabilityIntervals, build_prepared_datasets
 from backend.src.processing.interpolate import get_or_interpolate_data
-from backend.src.processing.intersections import intersect_many, summarize_intervals
 
 logger = get_logger()
 

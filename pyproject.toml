@@ -13,13 +13,13 @@ extend-exclude = '''
 
 [tool.isort]
 profile = "black"
-line_length = 100
+line_length = 140
 py_version = 311
 skip_gitignore = true
 extend_skip = ["frontend", "papers", "wiki"]
 
 [tool.ruff]
-line-length = 100
+line-length = 140
 target-version = "py311"
 extend-exclude = ["frontend", "papers", "wiki"]
 

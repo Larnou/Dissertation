@@ -144,6 +144,7 @@ class PathsConfig(BaseModel):
     periods: str = Field(description="Каталог CSV-периодов относительно корня репозитория.")
     matrices: str = Field(description="Каталог матриц/распределений относительно корня репозитория.")
     images: str = Field(description="Каталог изображений относительно корня репозитория.")
+    distributions: str = Field(description="Каталог распределений параметров.")
 
 
 class ResolvedPaths(BaseModel):
@@ -157,6 +158,7 @@ class ResolvedPaths(BaseModel):
     periods: Path
     matrices: Path
     images: Path
+    distributions: Path
 
 
 class AppConfig(BaseModel):

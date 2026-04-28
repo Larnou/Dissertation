@@ -9,6 +9,7 @@ THEMIS_PREFIX = "THEMIS"
 DATA_DIRNAME = "data"
 PERIODS_DIRNAME = "periods"
 MATRICES_DIRNAME = "matrices"
+DISTRIBUTIONS_DIRNAME = "distributions"
 
 
 def _project_root() -> Path:
@@ -69,3 +70,7 @@ class PathResolver:
     def matrix_file(self, file_name: str) -> Path:
         safe_name = _safe_name("matrix file name", file_name)
         return (self._event_root(self.config.paths.matrices) / MATRICES_DIRNAME / safe_name).resolve()
+
+    def distribution_file(self, file_name: str) -> Path:
+        safe_name = _safe_name("distribution file name", file_name)
+        return (self._event_root(self.config.paths.distributions) / DISTRIBUTIONS_DIRNAME / safe_name).resolve()
