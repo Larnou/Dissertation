@@ -4,8 +4,8 @@ from backend.src.config import config
 from backend.src.config import get_logger
 from backend.src.io import DataDownloading
 from backend.src.processing import AvailabilityIntervals
+from backend.src.processing.core import intersect_many, summarize_intervals
 from backend.src.processing.interpolate import get_or_interpolate_data
-from backend.src.processing.intersections import intersect_many, summarize_intervals
 
 logger = get_logger()
 

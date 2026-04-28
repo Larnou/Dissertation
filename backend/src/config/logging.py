@@ -53,7 +53,7 @@ def get_logger():
     return logger
 
 
-def progress(iterable: Iterable[T], desc: str, **kwargs: Any) -> tqdm_asyncio[T]:
+def progress(iterable: Iterable[T], desc: str, **kwargs: Any):
     """
     Единый progress-bar для долгих операций.
 

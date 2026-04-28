@@ -14,7 +14,7 @@ def load_app_config() -> AppConfig:
     (например, config.window_filter.low_pass / high_pass — длительности периодов в секундах).
     """
 
-    path = Path(__file__).resolve().parent / "config.json"
+    path = Path(__file__).resolve().parents[3] / "config.json"
 
     if not path.is_file():
         msg = f"Config file not found: {path}"

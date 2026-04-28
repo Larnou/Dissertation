@@ -1,11 +1,6 @@
-import csv
 from collections.abc import Iterable, Sequence
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import TypeAlias, TypedDict
-
-from backend.src.config import config
-from backend.src.io.paths import availability_periods_dir
 
 Interval: TypeAlias = tuple[datetime, datetime]
 
@@ -29,12 +24,6 @@ def _ensure_interval(interval: Interval) -> Interval:
 
 
 def normalize_intervals(intervals: Iterable[Interval]) -> list[Interval]:
-    """
-    Validate intervals and sort them by (start, end).
-
-    Notes:
-    - Adjacent intervals are not merged here; do it upstream if needed.
-    """
     normalized = [_ensure_interval(interval=item) for item in intervals]
     normalized.sort(key=lambda item: (item[0], item[1]))
     return normalized
@@ -45,14 +34,11 @@ def _is_long_enough(interval: Interval, min_duration: timedelta) -> bool:
     return (end_dt - start_dt) >= min_duration
 
 
-def intersect_two(first_intervals: Sequence[Interval], second_intervals: Sequence[Interval], min_duration: timedelta = timedelta(0)) -> list[Interval]:
-    """
-    Intersect two sorted interval sequences in O(n+m).
-
-    Contract:
-    - Inputs must be normalized (validated + sorted by start time).
-    - Output is sorted by start time.
-    """
+def intersect_two(
+    first_intervals: Sequence[Interval],
+    second_intervals: Sequence[Interval],
+    min_duration: timedelta = timedelta(0),
+) -> list[Interval]:
     if not first_intervals or not second_intervals:
         return []
 
@@ -83,14 +69,10 @@ def intersect_two(first_intervals: Sequence[Interval], second_intervals: Sequenc
     return overlaps
 
 
-def intersect_many(interval_groups: Sequence[Iterable[Interval]] | None, min_duration: timedelta = timedelta(0)) -> list[Interval]:
-    """
-    Intersect N groups of intervals.
-
-    RORO:
-    - Receive: {interval_groups, min_duration}
-    - Return: list[Interval]
-    """
+def intersect_many(
+    interval_groups: Sequence[Iterable[Interval]] | None,
+    min_duration: timedelta = timedelta(0),
+) -> list[Interval]:
     if not interval_groups:
         return []
 
@@ -106,11 +88,6 @@ def intersect_many(interval_groups: Sequence[Iterable[Interval]] | None, min_dur
             second_intervals=group,
             min_duration=min_duration,
         )
-
-    save_intervals_csv(
-        intervals=current,
-        output_path=availability_periods_dir(config) / "intersections_availability_periods.csv",
-    )
 
     return current
 
@@ -128,26 +105,3 @@ def summarize_intervals(intervals: Sequence[Interval]) -> IntervalsSummary:
         "first": intervals[0],
         "last": intervals[-1],
     }
-
-
-def save_intervals_csv(intervals: Sequence[Interval], output_path: str | Path) -> Path:
-    """
-    Save intervals to CSV with unified columns:
-    start, end, duration_seconds.
-    """
-    destination = Path(output_path)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-
-    with destination.open("w", newline="", encoding="utf-8") as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(["start", "end", "duration_seconds"])
-        for start_dt, end_dt in intervals:
-            writer.writerow(
-                [
-                    start_dt.isoformat(),
-                    end_dt.isoformat(),
-                    (end_dt - start_dt).total_seconds(),
-                ]
-            )
-
-    return destination

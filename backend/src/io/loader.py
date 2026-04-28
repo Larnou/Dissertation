@@ -6,7 +6,6 @@ import pandas as pd
 
 from backend.src.config.schemas import AppConfig
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
-from backend.src.io.paths import event_interval_folder_name
 from backend.src.io.raw_data import RawData
 from backend.src.io.utils.build_shue_dataset import build_shue_dataset
 from backend.src.io.utils.interpolate_omn_dataset import interpolate_omn_dataset
@@ -38,11 +37,6 @@ class DataDownloading:
     def __init__(self, parameters: AppConfig, load_from_cdaweb: bool) -> None:
         self.config = AppConfig.model_validate(dict(parameters))
         self.load_from_cdaweb = load_from_cdaweb
-
-
-    def format_file_name(self) -> str:
-        """Сегмент папки по датам интервала (совместимость с прежним API)."""
-        return event_interval_folder_name(self.config)
 
 
     def read_from_disk(self, stem: str) -> pd.DataFrame:

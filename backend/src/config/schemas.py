@@ -136,12 +136,14 @@ class HParameterConfig(BaseModel):
 
 
 class PathsConfig(BaseModel):
-    """Корневые пути для данных и изображений относительно корня проекта."""
+    """Корневые пути для артефактов относительно корня проекта."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    data_root: str = Field(description="Каталог данных относительно корня репозитория.")
-    images_root: str = Field(description="Каталог изображений относительно корня репозитория.")
+    data: str = Field(description="Каталог parquet-данных относительно корня репозитория.")
+    periods: str = Field(description="Каталог CSV-периодов относительно корня репозитория.")
+    matrices: str = Field(description="Каталог матриц/распределений относительно корня репозитория.")
+    images: str = Field(description="Каталог изображений относительно корня репозитория.")
 
 
 class ResolvedPaths(BaseModel):
@@ -151,9 +153,10 @@ class ResolvedPaths(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    project_root: Path
-    data_root: Path
-    images_root: Path
+    data: Path
+    periods: Path
+    matrices: Path
+    images: Path
 
 
 class AppConfig(BaseModel):
