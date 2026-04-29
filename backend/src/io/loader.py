@@ -7,7 +7,7 @@ import pandas as pd
 from backend.src.config.schemas import AppConfig
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
 from backend.src.io.raw_data import RawData
-from backend.src.io.utils.build_shue_dataset import build_shue_dataset
+from backend.src.processing.services.build_shue_dataset import build_shue_dataset
 from backend.src.processing.interpolation.interpolate_omn_dataset import interpolate_omn_dataset
 
 # Логические имена файлов (stem) внутри .../events/<даты>/THEMIS-X/

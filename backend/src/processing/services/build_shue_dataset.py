@@ -1,9 +1,20 @@
-from __future__ import annotations
-
 import numpy as np
 import pandas as pd
 
 from backend.src.physics.shue import ShueModel
+
+OMNI_MATCH_TOLERANCE = pd.Timedelta(minutes=1)
+SHUE_MIN_L = 4.0
+
+
+def prepare_for_time_merge(dataframe: pd.DataFrame) -> pd.DataFrame:
+    prepared = dataframe.copy()
+    prepared["Time"] = pd.to_datetime(prepared["Time"], utc=True, errors="coerce")
+    return prepared.dropna(subset=["Time"]).sort_values("Time").reset_index(drop=True)
+
+
+def compute_mlt(longitude: pd.Series) -> np.ndarray:
+    return ((np.asarray(longitude, dtype="float64") + 180.0) % 360.0) / 15.0
 
 
 def build_shue_dataset(*, ssc_data: pd.DataFrame, omn_data: pd.DataFrame) -> pd.DataFrame:
@@ -19,38 +30,28 @@ def build_shue_dataset(*, ssc_data: pd.DataFrame, omn_data: pd.DataFrame) -> pd.
     - OMNI: Time, FP, Bz_GSM
     """
 
-    ssc_working = ssc_data.copy()
-    omn_working = omn_data.copy()
-
-    ssc_working["Time"] = pd.to_datetime(ssc_working["Time"], utc=True, errors="coerce")
-    omn_working["Time"] = pd.to_datetime(omn_working["Time"], utc=True, errors="coerce")
-
-    ssc_working = ssc_working.dropna(subset=["Time"]).sort_values("Time").reset_index(drop=True)
-    omn_working = omn_working.dropna(subset=["Time"]).sort_values("Time").reset_index(drop=True)
+    ssc_working = prepare_for_time_merge(ssc_data)
+    omn_working = prepare_for_time_merge(omn_data)
 
     merged = pd.merge_asof(
         left=ssc_working,
         right=omn_working[["Time", "FP", "Bz_GSM"]],
         on="Time",
         direction="nearest",
-        tolerance=pd.Timedelta(minutes=1),
+        tolerance=OMNI_MATCH_TOLERANCE,
     )
 
     merged = merged.rename(columns={"Bz_GSM": "Bz"})
     merged = merged.dropna(subset=["FP", "Bz", "GSM_X", "GSM_Y", "GSM_Z", "L", "Longitude"]).reset_index(drop=True)
 
-    mlt = ((np.asarray(merged["Longitude"], dtype="float64") + 180.0) % 360.0) / 15.0
-    r = ShueModel(merged).model()
-
     dataset = pd.DataFrame(
         {
-            "Time": merged["Time"].to_list(),
-            "L": merged["L"].to_list(),
-            "MLT": mlt,
-            "r": r,
+            "Time": merged["Time"],
+            "L": merged["L"],
+            "MLT": compute_mlt(merged["Longitude"]),
+            "r": ShueModel(merged).model(),
         }
     )
 
-    bordered_dataset = dataset[(dataset["L"] >= 4) & (dataset["L"] <= dataset["r"])].reset_index(drop=True)
+    bordered_dataset = dataset[(dataset["L"] >= SHUE_MIN_L) & (dataset["L"] <= dataset["r"])].reset_index(drop=True)
     return bordered_dataset
-

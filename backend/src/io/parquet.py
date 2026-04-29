@@ -7,11 +7,18 @@ from backend.src.io.paths import PathResolver
 
 
 def data_file_path(config: AppConfig, dataset_stem: str) -> Path:
-    """Абсолютный путь к `.../events/<даты>/THEMIS-X/<dataset_stem>.parquet`."""
+    """
+    Абсолютный путь к `.../events/<даты>/THEMIS-X/<dataset_stem>.parquet`.
+    """
+
     return PathResolver(config).data_file(dataset_stem)
 
 
 def split_dataframe_by_time_gaps(dataframe: pd.DataFrame, time_column: str = "Time", gap_seconds: int = 12) -> list[pd.DataFrame]:
+    """
+    Разбивает DataFrame на сегменты по разрывам во времени.
+    """
+
     if dataframe.empty:
         return []
 
@@ -25,6 +32,10 @@ def split_dataframe_by_time_gaps(dataframe: pd.DataFrame, time_column: str = "Ti
 
 
 def read_data_from_parquet(config: AppConfig, dataset_stem: str, read_as_list: bool = False) -> pd.DataFrame | list[pd.DataFrame]:
+    """
+    Читает parquet-датасет; опционально разбивает его по временным разрывам.
+    """
+
     path = PathResolver(config).data_file(dataset_stem)
     dataframe = pd.read_parquet(path)
 
@@ -38,8 +49,9 @@ def save_data_to_parquet(config: AppConfig, dataframe: pd.DataFrame, dataset_ste
     """
     Сохраняет DataFrame в parquet под `backend/data/events/...`.
     """
+
     path = PathResolver(config).data_file(dataset_stem)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    dataframe.reset_index(drop=True, inplace=True)
-    dataframe.to_parquet(path)
+    saved_dataframe = dataframe.reset_index(drop=True)
+    saved_dataframe.to_parquet(path)

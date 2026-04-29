@@ -11,6 +11,7 @@ def save_distribution_matrix(config: AppConfig, matrix: np.ndarray, parameter_na
     """
     Сохраняет одну матрицу распределения в CSV в каталоге matrices.
     """
+
     file_name = f"distribution_{parameter_name}_{reducer}.csv"
     path = PathResolver(config).distribution_file(file_name)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -23,6 +24,7 @@ def save_distribution_matrices(config: AppConfig, distributions: dict[str, np.nd
     """
     Сохраняет набор матриц распределений и возвращает пути к файлам.
     """
+
     saved_paths: dict[str, Path] = {}
     for parameter_name, matrix in distributions.items():
         saved_paths[parameter_name] = save_distribution_matrix(

@@ -223,4 +223,3 @@ class RawData:
         result = pd.concat(dataframes, ignore_index=True)
         result = result.dropna(subset=["Time"]).drop_duplicates(subset=["Time"])
         return result
-
