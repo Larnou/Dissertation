@@ -19,10 +19,10 @@ logger.info(f"Загружено датасетов: {len(prepared_datasets)}")
 distribution_calculator = Distributions(config)
 param_distr = distribution_calculator.collect(prepared_datasets)
 
-reducer = "mean"
-distribution_maps = distribution_calculator.build_maps(param_distr, reducer=reducer)
-saved_paths = save_distribution_matrices(config, distribution_maps, reducer=reducer)
+reducers = ['mean', 'median', 'q25', 'q75']
+for reducer in reducers:
+    distribution_maps = distribution_calculator.build_maps(param_distr, reducer=reducer)
+    saved_paths = save_distribution_matrices(config, distribution_maps, reducer=reducer)
 
-for parameter_name, path in saved_paths.items():
-    logger.info(f"Сохранено распределение {parameter_name}: {path}")
-
+    for parameter_name, path in saved_paths.items():
+        logger.info(f"Сохранено распределение {parameter_name}: {path}")

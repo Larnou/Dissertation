@@ -26,7 +26,7 @@ def _safe_name(name: str, value: str, suffix: str | None = None) -> str:
     return normalized
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class PathResolver:
     """
     Минимальный публичный API путей.
