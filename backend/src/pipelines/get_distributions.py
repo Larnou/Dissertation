@@ -1,5 +1,5 @@
 from backend.src.config import get_config, get_logger
-from backend.src.io.matrices import save_distribution_matrices
+from backend.src.io.matrices import save_distribution_matrices, save_raw_distribution_long
 from backend.src.io.parquet import read_data_from_parquet
 from backend.src.processing.distribution import Distributions
 
@@ -18,6 +18,8 @@ logger.info(f"Загружено датасетов: {len(prepared_datasets)}")
 
 distribution_calculator = Distributions(config)
 param_distr = distribution_calculator.collect(prepared_datasets)
+raw_long_path = save_raw_distribution_long(config, param_distr)
+logger.info(f"Сохранены сырые распределения (long): {raw_long_path}")
 
 reducers = ['mean', 'median', 'q25', 'q75']
 for reducer in reducers:
