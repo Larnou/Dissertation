@@ -11,6 +11,7 @@ DATA_DIRNAME = "data"
 PERIODS_DIRNAME = "periods"
 MATRICES_DIRNAME = "matrices"
 DISTRIBUTIONS_DIRNAME = "distributions"
+IMAGES_DIRNAME = "images"
 
 
 def _project_root() -> Path:
@@ -119,3 +120,11 @@ class PathResolver:
 
         safe_name = _safe_name("distribution file name", file_name)
         return (self._event_root(self.config.paths.distributions) / DISTRIBUTIONS_DIRNAME / safe_name).resolve()
+
+    def image_file(self, file_name: str) -> Path:
+        """
+        Путь к PNG-изображению в каталоге images.
+        """
+
+        safe_name = _safe_name("image file name", file_name)
+        return (self._event_root(self.config.paths.images) / IMAGES_DIRNAME / safe_name).resolve()

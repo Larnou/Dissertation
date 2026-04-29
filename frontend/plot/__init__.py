@@ -1,6 +1,7 @@
 from frontend.plot.availability_periods import plot_availability_periods, read_periods, read_time_series
 from frontend.plot.global_histogram import show_hist_sectors, show_hist_sectors_from_long
 from frontend.plot.h_range import plot_h_parameter_range
+from frontend.plot.meas_conv_scatter import plot_meas_vs_conv_with_regression
 from frontend.plot.satellite_plot import SatellitePlot, plot_satellite_matrix
 from frontend.plot.shue_model import plot_shue_model, read_shue_dataset
 
@@ -10,6 +11,7 @@ __all__ = [
     "show_hist_sectors",
     "show_hist_sectors_from_long",
     "plot_h_parameter_range",
+    "plot_meas_vs_conv_with_regression",
     "plot_satellite_matrix",
     "plot_shue_model",
     "read_periods",

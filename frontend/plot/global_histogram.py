@@ -127,6 +127,7 @@ def show_hist_sectors_from_long(
     component: str,
     lfrom: int,
     lto: int,
+    output_path: str | Path | None = None,
     show: bool = True,
 ) -> None:
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(10, 10), layout="constrained")
@@ -160,6 +161,11 @@ def show_hist_sectors_from_long(
         ax.tick_params(axis="x", which="minor", color="black", length=4, width=1, labelsize=14)
         ax.set_title(f"{parameter}{component} parameter for MLT={mlt_range[0]}-{mlt_range[1]} ({component})", size=16)
         ax.legend(fontsize=12)
+
+    if output_path is not None:
+        resolved_output = Path(output_path).expanduser().resolve()
+        resolved_output.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(resolved_output, dpi=300)
 
     if show:
         plt.show()
