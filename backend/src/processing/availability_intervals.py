@@ -2,13 +2,15 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from backend.src.config import config
+from backend.src.config import get_config
 from backend.src.processing.services.availability import AvailabilityService
 from backend.src.processing.utils.intervals_view import DataSourceKind, IntervalsView
 from backend.src.processing.visualization.availability_plot import (
     show_availability,
     show_combined_intervals,
 )
+
+config = get_config()
 
 
 @dataclass(frozen=True, slots=True)

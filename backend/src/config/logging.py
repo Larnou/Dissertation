@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from datetime import datetime, timezone
 from typing import Any, TypeVar
 
-from loguru import Logger, logger
+from loguru import logger
 from tqdm.auto import tqdm
 
 T = TypeVar("T")
@@ -52,7 +52,7 @@ def setup_logging(level: str = "INFO") -> None:
     )
 
 
-def get_logger() -> Logger:
+def get_logger() -> Any:
     """
     Возвращает сконфигурированный logger.
     """

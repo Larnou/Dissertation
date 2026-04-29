@@ -1,13 +1,13 @@
 from datetime import timedelta
 
-from backend.src.config import config
-from backend.src.config import get_logger
+from backend.src.config import get_config, get_logger
 from backend.src.io import DataDownloading
 from backend.src.processing import AvailabilityIntervals
 from backend.src.processing.core import intersect_many, summarize_intervals
-from backend.src.processing.interpolate import get_or_interpolate_data
+from backend.src.processing.interpolation import get_or_interpolate_data
 
 logger = get_logger()
+config = get_config()
 
 load_from_cdaweb = False
 loader = DataDownloading(config, load_from_cdaweb=load_from_cdaweb)

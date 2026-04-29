@@ -8,10 +8,11 @@ def parse_delta(delta: str) -> timedelta:
 
     В ноутбуке 'M' трактовался как 30 дней.
     """
+
     if not isinstance(delta, str) or not delta.strip():
         raise ValueError("Delta must be a non-empty string like '1D'")
 
-    duration_str, unit = re.findall(r"[A-Za-z]+|\d+", delta.strip())
+    duration_str, unit = re.findall(r"[MDH]+|\d+", delta.strip())
     duration = int(duration_str)
     unit = unit.upper()
 
@@ -22,6 +23,6 @@ def parse_delta(delta: str) -> timedelta:
     }
 
     if unit not in mapping:
-        raise ValueError("Delta unit must be one of: M, D, H")
+        raise ValueError(f"Used delta={unit} must be one of: M, D, H")
 
     return mapping[unit]

@@ -1,14 +1,12 @@
-from datetime import timedelta
-
 import pandas as pd
 
-from backend.src.config import config, get_logger
-from backend.src.io import DataDownloading
+from backend.src.config import get_config, get_logger
 from backend.src.io.parquet import data_file_path, save_data_to_parquet
-from backend.src.processing import AvailabilityIntervals, build_prepared_datasets
-from backend.src.processing.interpolate import get_or_interpolate_data
+from backend.src.processing import build_prepared_datasets
+from backend.src.processing.interpolation import get_or_interpolate_data
 
 logger = get_logger()
+config = get_config()
 
 INTERPOLATE_DATA = False
 LOAD_FROM_CDAWEB = False

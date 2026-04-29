@@ -1,9 +1,10 @@
-from backend.src.config import config, get_logger
+from backend.src.config import get_config, get_logger
 from backend.src.io.matrices import save_distribution_matrices
 from backend.src.io.parquet import read_data_from_parquet
 from backend.src.processing.distribution import Distributions
 
 logger = get_logger()
+config = get_config()
 
 
 logger.info("Загрузка prepared_data.parquet как списка датасетов.")

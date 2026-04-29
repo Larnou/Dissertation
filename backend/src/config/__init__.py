@@ -26,6 +26,7 @@ __all__ = [
     "PathsConfig",
     "ReadingConfig",
     "WindowFilterConfig",
+    "get_config",
     "get_logger",
     "load_app_config",
 	"progress_bar",
