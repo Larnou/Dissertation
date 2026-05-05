@@ -33,6 +33,8 @@ class DFInterpolator:
         # Корректировка данных на период времени
         corrected_datasets = []
         overlap_start, overlap_end = self.normalize_overlap(overlap)
+
+
         # Ограничение по времени для каждого датасета
         for dataframe in self.dataframes:
             working = dataframe.copy()
@@ -63,6 +65,7 @@ class DFInterpolator:
 
         # Объединяем датафреймы к колонке со временем
         for index, dataset in enumerate(sliced):
+            logger.info(f"index: {index} columns {dataset.columns}")
             working_dataset = dataset
             if index > 0 and "L" in working_dataset.columns:
                 # Сохраняем L только из первого датасета (ssc_data), чтобы не получать L_x/L_y.

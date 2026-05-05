@@ -7,6 +7,7 @@ import pandas as pd
 from backend.src.config.schemas import AppConfig
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
 from backend.src.io.raw_data import RawData
+from backend.src.processing.services.build_beta_dataset import build_beta_dataset
 from backend.src.processing.services.build_shue_dataset import build_shue_dataset
 from backend.src.processing.interpolation.interpolate_omn_dataset import interpolate_omn_dataset
 
@@ -17,6 +18,7 @@ DATASET_MAGNETIC_FIELD = "fgm"
 DATASET_OMNI = "omn"
 DATASET_SSC = "ssc"
 DATASET_STATE = "sta"
+DATASET_MOM = "mom"
 
 
 @dataclass(init=False)
@@ -87,6 +89,23 @@ class DataDownloading:
         raw_omn_dataset = self._load_by_source(stem, lambda r: r.get_omn_dataframe())
         return interpolate_omn_dataset(omn_data=raw_omn_dataset)
 
+    def get_mom_data(self) -> pd.DataFrame:
+        """``mom.parquet`` с CDAWeb: Time, Ion_pressure (eV/см³)."""
+        stem = DATASET_MOM
+        return self._load_by_source(stem, lambda r: r.get_mom_dataframe())
+
+    def get_beta_data(self) -> pd.DataFrame:
+        """
+        FGM + MOM через :func:`build_beta_dataset` — колонки Time, beta, Ion_pressure, GSM_B*.
+
+        Не путать с :meth:`get_mom_data` (только MOM); для пайплайна с интерполяцией
+        обычно подают FGM и MOM отдельно, а β можно посчитать по смёрженной таблице.
+        """
+
+        fgm_data = self.get_fgm_data()
+        mom_data = self.get_mom_data()
+
+        return build_beta_dataset(fgm_data=fgm_data, mom_data=mom_data)
 
     def get_shue_data(self) -> pd.DataFrame:
         """

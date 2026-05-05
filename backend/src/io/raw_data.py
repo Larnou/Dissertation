@@ -1,8 +1,11 @@
+import sys
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Literal
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from backend.src.config import progress_bar
 from backend.src.config.schemas import AppConfig
@@ -223,3 +226,47 @@ class RawData:
         result = pd.concat(dataframes, ignore_index=True)
         result = result.dropna(subset=["Time"]).drop_duplicates(subset=["Time"])
         return result
+
+    # TODO: переписать эту часть, пока что как заглушка
+    def get_mom_dataframe(self) -> pd.DataFrame:
+        # Получение границ скачиваемых промежутков
+        time_borders = self.format_time_borders(self.parameters)
+
+        # reformat columns
+        time = 'tha_peim_epoch'.format(sat = self.parameters['reading']['satellite'].lower())
+        pressure = 'th{sat}_peim_ptot'.format(sat = self.parameters['reading']['satellite'].lower())
+        instrument = 'TH{sat}_L2_MOM'.format(sat = self.parameters['reading']['satellite'])
+        print('Обработка данных инструмента: ', instrument)
+
+        # Колонки по которых будут собираться данные
+        columns = [pressure]
+
+        # Получение данных с сервиса CDAweb
+        # При копировании в PyCharm - удалить [1]
+        dataframes = []
+        tqd = tqdm(time_borders, desc = 'Обработка пакетов датасетов', file = sys.stdout)
+
+        for border in tqd:
+            # Обработка данных для динамического отображения скачиваемого промежутка
+            st_description = datetime.strptime(border['start'], '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d')
+            et_description = datetime.strptime(border['end'], '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d')
+            tqd.set_description("Скачивание: с {st} по {en}".format(st = st_description, en = et_description))
+
+            # Скачивание данных через класс CDAweb
+            data = CDAweb(instrument).get_dataset(columns, border['start'], border['end'])[1]
+
+            # print(len(data[time].data), len(data[pressure].data))
+            raw_data = {
+                'Time': data[time].data,
+                'Ion_pressure': data[pressure].data,
+            }
+
+            # Создание датафрейма и перевод времени в нужный формат
+            dataframe = pd.DataFrame(data = raw_data)
+            dataframe['Time'] = pd.to_datetime(dataframe["Time"].dt.strftime('%Y-%m-%d %H:%M:%S'))
+            dataframes.append(dataframe)
+
+        print(' ')
+        dataframe_concated = pd.concat(dataframes).reset_index(drop=True)
+        dataframe_concated.drop_duplicates(subset=['Time'], inplace=True)
+        return dataframe_concated

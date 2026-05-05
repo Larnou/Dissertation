@@ -12,6 +12,7 @@ DataSourceKind: TypeAlias = Literal[
     "sta",
     "omn",
     "shue",
+    "beta",
 ]
 
 TimeInterval: TypeAlias = tuple[pd.Timestamp, pd.Timestamp]
@@ -36,6 +37,9 @@ RULES: dict[DataSourceKind, AvailabilityRule] = {
     # Shue-датасет считается валидным, когда рассчитан r (и есть Time).
     # Дыры в r обычно идут от отсутствия OMNI/SSC для мэчинга.
     "shue": AvailabilityRule("r", 90, 3600),
+
+    # β из build_beta_dataset(FGM+MOM); дыры — слабое поле, разрывы FGM/MOM.
+    "beta": AvailabilityRule("beta", 45, 3600),
 }
 
 

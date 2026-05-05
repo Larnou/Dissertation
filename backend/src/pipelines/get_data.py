@@ -17,11 +17,11 @@ logger.info(f"Загрузка данных с {'CDAweb' if load_from_cdaweb els
 ssc_data = loader.get_ssc_data()
 fgm_data = loader.get_fgm_data()
 esa_ion_data = loader.get_esa_data(particle="ion")
-# esa_electron_data = loader.get_esa_data(particle="electron")
 efi_data = loader.get_efi_data()
 sta_data = loader.get_sta_data()
 omn_data = loader.get_omn_data()
 shue_data = loader.get_shue_data()
+beta_data = loader.get_beta_data()
 
 
 # Доступность данных
@@ -35,6 +35,7 @@ esa_ion_intervals = availability.from_dataframe(esa_ion_data, "esa_ion")
 efi_intervals = availability.from_dataframe(efi_data, "efi")
 sta_intervals = availability.from_dataframe(sta_data, "sta")
 shue_intervals = availability.from_dataframe(shue_data, "shue")
+beta_intervals = availability.from_dataframe(beta_data, "beta")
 
 
 # Intersections
@@ -72,6 +73,7 @@ available_data = get_or_interpolate_data(
         efi_data,
         sta_data,
         shue_data,
+        beta_data,
     ],
     overlaps=interval_intersections,
     min_minutes=25.0,
