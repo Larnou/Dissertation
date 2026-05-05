@@ -63,7 +63,7 @@ def main() -> None:
     parameter = "G"
     component = "r"
     lfrom = 4
-    lto = 16
+    lto = 10
 
     show_plot(config, parameter, component, lfrom, lto, save_image=True, show=True)
 

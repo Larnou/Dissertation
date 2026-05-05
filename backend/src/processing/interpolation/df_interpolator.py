@@ -34,7 +34,6 @@ class DFInterpolator:
         corrected_datasets = []
         overlap_start, overlap_end = self.normalize_overlap(overlap)
 
-
         # Ограничение по времени для каждого датасета
         for dataframe in self.dataframes:
             working = dataframe.copy()

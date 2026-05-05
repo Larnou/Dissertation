@@ -58,7 +58,7 @@ logger.info(f"Итог по пересечениям: {summarize_intervals(inter
 # Интерполяция данных
 # Интерполяция, сохранение и загрузка получившихся данных
 # Если INTERPOLATE_DATA = False загружаем данные с гуглДиска
-# Если INTERPOLATE_DATA = True выполняем новую интерпоялцию по данным
+# Если INTERPOLATE_DATA = True выполняем новую интерполяцию по данным
 
 INTERPOLATE_DATA = True
 

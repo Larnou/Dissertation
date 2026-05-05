@@ -14,7 +14,6 @@ def build_beta_dataset(
     mom_data: pd.DataFrame,
     match_tolerance: pd.Timedelta | None = None,
     pressure_column: str = "Ion_pressure",
-    include_electron_pressure_equal_ion: bool = False,
 ) -> pd.DataFrame:
     """
     Собирает датазет только с временем и β из двух источников: FGM и MOM.

@@ -47,10 +47,4 @@ class ShueModel:
         alpha = self.get_alpha(bz, dp)
         r0 = self.get_r0(bz, dp)
 
-        r = self.get_r(r0, cos_theta, alpha)
-
-        # Сохранение полученного результата
-        # data = self.data.copy(deep=True)
-        # data['r'] = r
-
-        return r
+        return self.get_r(r0, cos_theta, alpha)
