@@ -81,10 +81,10 @@ def main() -> None:
     # Доступные reducer: mean, median, q25, q75
 
     config = get_config()
-    parameter = "G"
-    component = "f"
+    parameter = "H"
+    component = "r"
     reducers = ["mean", "median", "q25", "q75"]
-    show_plot(config, parameter, component, reducers, save_image=False)
+    show_plot(config, parameter, component, reducers, save_image=True)
 
 
 if __name__ == "__main__":

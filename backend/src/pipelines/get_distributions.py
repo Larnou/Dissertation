@@ -18,8 +18,9 @@ logger.info(f"Загружено датасетов: {len(prepared_datasets)}")
 
 distribution_calculator = Distributions(config)
 param_distr = distribution_calculator.collect(prepared_datasets)
-raw_long_path = save_raw_distribution_long(config, param_distr)
-logger.info(f"Сохранены сырые распределения (long): {raw_long_path}")
+raw_long_paths = save_raw_distribution_long(config, param_distr)
+for parameter_name, raw_long_path in raw_long_paths.items():
+    logger.info(f"Сохранены сырые распределения (long) для {parameter_name}: {raw_long_path}")
 
 reducers = ['mean', 'median', 'q25', 'q75']
 for reducer in reducers:

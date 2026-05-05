@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     config = get_config()
     parameter = 'H'
-    component = 'f'
+    component = 'a'
     reducer = ['mean', 'q25']
 
-    show_plot(config, parameter, component, reducer, save_image=False)
+    show_plot(config, parameter, component, reducer, save_image=True)

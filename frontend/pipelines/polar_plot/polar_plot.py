@@ -62,7 +62,7 @@ def main() -> None:
     parameter = "H"
     component = "a"
     reducer = "mean"
-    show_plot(config, parameter, component, reducer, save_image=False)
+    show_plot(config, parameter, component, reducer, save_image=True)
 
 
 

@@ -21,11 +21,11 @@ def read_distribution_raw_long(path: str | Path) -> pd.DataFrame:
     resolved_path = Path(path).expanduser().resolve()
     if not resolved_path.exists():
         raise FileNotFoundError(f"Raw distribution file not found: {resolved_path}")
-    return pd.read_csv(resolved_path)
+    return pd.read_parquet(resolved_path)
 
 
-def build_raw_long_path(config: AppConfig) -> Path:
-    return PathResolver(config).matrix_file("distribution_raw_long.csv")
+def build_raw_long_path(config: AppConfig, parameter: str, component: str) -> Path:
+    return PathResolver(config).matrix_file(f"distribution_raw_long_{parameter}_{component}.parquet")
 
 
 def show_plot(
@@ -38,7 +38,7 @@ def show_plot(
     show: bool = True,
 ) -> None:
     resolver = PathResolver(config)
-    raw_long_path = build_raw_long_path(config)
+    raw_long_path = build_raw_long_path(config, parameter, component)
     raw_long = read_distribution_raw_long(raw_long_path)
     parameter_name = f"{parameter}_{component}"
     output_path = None
@@ -60,10 +60,10 @@ def main() -> None:
     # Доступные parameter: G, H
     # Доступные компоненты: f, r, a
     config = get_config()
-    parameter = "G"
+    parameter = "H"
     component = "r"
     lfrom = 4
-    lto = 10
+    lto = 16
 
     show_plot(config, parameter, component, lfrom, lto, save_image=True, show=True)
 

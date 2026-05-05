@@ -89,8 +89,9 @@ def plot_beta_h_count_heatmap(
         raise KeyError(f"Required columns are missing: {missing}")
 
     work = data.loc[:, required].dropna()
+    work = work[(work["beta"] >= 0.0) & (work["beta"] <= 1.5)]
     if work.empty:
-        raise ValueError("No paired beta and H data found for heatmap.")
+        raise ValueError("No paired beta and H data found for heatmap in 0 <= beta <= 10 range.")
 
     beta_values = work["beta"].to_numpy(dtype=float)
     h_values = work[h_parameter].to_numpy(dtype=float)
