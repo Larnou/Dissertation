@@ -55,7 +55,7 @@ def show_plot(
 def main() -> None:
     config = get_config()
     lfrom = 4
-    lto = 16
+    lto = 8
 
     show_plot(
         config=config,

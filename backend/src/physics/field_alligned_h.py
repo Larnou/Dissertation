@@ -185,6 +185,10 @@ class FAHCalculator:
         Econv_cut = Econv_full.iloc[half_interval:-half_interval].reset_index(drop=True)
         Econv_cut.columns = ['x', 'y', 'z']
 
+        # Скорость ионов (обрезанная)
+        V_meas = df_cut[['GSM_Vix', 'GSM_Viy', 'GSM_Viz']]
+        V_meas.columns = ['x', 'y', 'z']
+
         # Проекции
         E_f = self._project(E_meas, ef)
         E_a = self._project(E_meas, ea)
@@ -192,6 +196,9 @@ class FAHCalculator:
         X_f = self._project(Econv_cut, ef)
         X_a = self._project(Econv_cut, ea)
         X_r = self._project(Econv_cut, er)
+        V_f = self._project(V_meas, ef)
+        V_a = self._project(V_meas, ea)
+        V_r = self._project(V_meas, er)
 
         # Компоненты тренда в FA (обрезанные) – для справки
         # B_f_trend = (trend_cut['GSM_Bx']*ef['x'] + trend_cut['GSM_By']*ef['y'] + trend_cut['GSM_Bz']*ef['z'])
@@ -206,6 +213,9 @@ class FAHCalculator:
             'X_f': X_f,
             'X_a': X_a,
             'X_r': X_r,
+            'V_f': V_f,
+            'V_a': V_a,
+            'V_r': V_r,
         }
 
     def _build_result(self, components, use_noise_mask: bool):
@@ -215,6 +225,9 @@ class FAHCalculator:
         X_f = components['X_f']
         X_a = components['X_a']
         X_r = components['X_r']
+        V_f = components['V_f']
+        V_a = components['V_a']
+        V_r = components['V_r']
 
         G_f = self.compute_g_parameter(E_f, X_f)
         G_a = self.compute_g_parameter(E_a, X_a)
@@ -256,6 +269,9 @@ class FAHCalculator:
             'X_f_conv': X_f,
             'X_a_conv': X_a,
             'X_r_conv': X_r,
+            'V_f_meas': V_f,
+            'V_a_meas': V_a,
+            'V_r_meas': V_r,
         })
 
     def calculate_h_fa_noise(self):

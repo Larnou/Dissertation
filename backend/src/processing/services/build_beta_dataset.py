@@ -36,9 +36,9 @@ def build_beta_dataset(
             f"В MOM-данных нет столбца {pressure_column!r}. Доступные: {list(mom.columns)}"
         )
 
-    mom_sub = mom[["Time", pressure_column]].copy()
-    if pressure_column != "Ion_pressure":
-        mom_sub = mom_sub.rename(columns={pressure_column: "Ion_pressure"})
+    mom_sub = mom[["Time", pressure_column, "Ion_density"]].copy()
+    # if pressure_column != "Ion_pressure":
+    #     mom_sub = mom_sub.rename(columns={pressure_column: "Ion_pressure"})
 
     merged = pd.merge_asof(
         left=fgm,
@@ -55,5 +55,6 @@ def build_beta_dataset(
         {
             "Time": merged["Time"],
             "beta": BetaModel(merged, pressure_column="Ion_pressure").model(),
+            "density": mom_sub['Ion_density'],
         }
     )

@@ -2,7 +2,7 @@
   "reading": {
     "satellite": "A",
     "time_start": "2017-01-01 00:00:00",
-    "time_end": "2018-03-01 00:00:00",
+    "time_end": "2017-01-04 00:00:00",
     "delta": "1M"
   },
   "window_filter": {

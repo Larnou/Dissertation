@@ -59,9 +59,9 @@ def main() -> None:
     # Доступные reducer: mean, median, q25, q75
 
     config = get_config()
-    parameter = "H"
+    parameter = "G"
     component = "a"
-    reducer = "mean"
+    reducer = "median"
     show_plot(config, parameter, component, reducer, save_image=True)
 
 

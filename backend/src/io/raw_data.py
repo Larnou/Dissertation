@@ -235,11 +235,13 @@ class RawData:
         # reformat columns
         time = 'tha_peim_epoch'.format(sat = self.parameters['reading']['satellite'].lower())
         pressure = 'th{sat}_peim_ptot'.format(sat = self.parameters['reading']['satellite'].lower())
+        density = f'th{self.parameters['reading']['satellite'].lower()}_peim_density'
+
         instrument = 'TH{sat}_L2_MOM'.format(sat = self.parameters['reading']['satellite'])
         print('Обработка данных инструмента: ', instrument)
 
         # Колонки по которых будут собираться данные
-        columns = [pressure]
+        columns = [pressure, density]
 
         # Получение данных с сервиса CDAweb
         # При копировании в PyCharm - удалить [1]
@@ -259,6 +261,7 @@ class RawData:
             raw_data = {
                 'Time': data[time].data,
                 'Ion_pressure': data[pressure].data,
+                'Ion_density': data[density].data,
             }
 
             # Создание датафрейма и перевод времени в нужный формат
