@@ -19,6 +19,10 @@ class DistributionBuckets:
     gf: Grid
     ga: Grid
     gr: Grid
+    beta: Grid
+    ja: Grid
+    jf: Grid
+    jr: Grid
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,6 +57,10 @@ class Distributions:
         gf = self._empty_grid()
         ga = self._empty_grid()
         gr = self._empty_grid()
+        beta = self._empty_grid()
+        ja = self._empty_grid()
+        jf = self._empty_grid()
+        jr = self._empty_grid()
 
         for dataset in progress_bar(datasets, desc="[distribution] расчёт H/G распределений"):
             if dataset.empty:
@@ -75,6 +83,11 @@ class Distributions:
                 gf[l_index][r_index].append(float(row.G_f))
                 ga[l_index][r_index].append(float(row.G_a))
                 gr[l_index][r_index].append(float(row.G_r))
+                beta[l_index][r_index].append(float(row.beta))
+                ja[l_index][r_index].append(float(row.J_a))
+                jr[l_index][r_index].append(float(row.J_r))
+                ja[l_index][r_index].append(float(row.J_a))
+
 
         return DistributionBuckets(hf=hf, ha=ha, hr=hr, gf=gf, ga=ga, gr=gr)
 
@@ -107,4 +120,8 @@ class Distributions:
             "G_f": self.reduce(buckets.gf, reducer),
             "G_a": self.reduce(buckets.ga, reducer),
             "G_r": self.reduce(buckets.gr, reducer),
+            "Beta": self.reduce(buckets.beta, reducer),
+            "J_f": self.reduce(buckets.jf, reducer),
+            "J_a": self.reduce(buckets.ja, reducer),
+            "J_r": self.reduce(buckets.jr, reducer),
         }

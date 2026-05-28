@@ -34,6 +34,8 @@ class DataFiltration:
         "GSM_X",
         "GSM_Y",
         "GSM_Z",
+        "density",
+        "beta",
     )
     OPTIONAL_META_COLUMNS: tuple[str, ...] = (
         "L",
