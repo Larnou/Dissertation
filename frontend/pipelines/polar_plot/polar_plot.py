@@ -24,7 +24,10 @@ def read_distribution_matrix(path: str | Path):
 
 
 def build_path(config: AppConfig, parameter: str, component: str, reducer: str) -> Path:
-    return PathResolver(config).distribution_file(f"distribution_{parameter}_{component}_{reducer}.csv")
+    if parameter != "Beta":
+        return PathResolver(config).distribution_file(f"distribution_{parameter}_{component}_{reducer}.csv")
+    else:
+        return PathResolver(config).distribution_file(f"distribution_{parameter}_{reducer}.csv")
 
 
 def show_plot(
@@ -41,8 +44,11 @@ def show_plot(
     print("Opening interactive plot window...")
 
     output_path = None
-    if save_image:
+    if save_image and parameter != "Beta":
         output_path = resolver.image_file(f"polar_{parameter}_{component}_{reducer}.png")
+    elif parameter == "Beta":
+        output_path = resolver.image_file(f"polar_{parameter}_{reducer}.png")
+
     plotter = SatellitePlot(min_lshell=4)
     plotter.draw_polar_plot(
         matrix,
@@ -54,14 +60,14 @@ def show_plot(
 
 
 def main() -> None:
-    # Доступные parameter: G, H
+    # Доступные parameter: G, H, Beta, J
     # Доступные компоненты: f, r, a
     # Доступные reducer: mean, median, q25, q75
 
     config = get_config()
-    parameter = "G"
-    component = "a"
-    reducer = "median"
+    parameter = "J"
+    component = "r"
+    reducer = "mean"
     show_plot(config, parameter, component, reducer, save_image=True)
 
 

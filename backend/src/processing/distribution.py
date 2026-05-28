@@ -89,7 +89,7 @@ class Distributions:
                 ja[l_index][r_index].append(float(row.J_a))
 
 
-        return DistributionBuckets(hf=hf, ha=ha, hr=hr, gf=gf, ga=ga, gr=gr)
+        return DistributionBuckets(hf=hf, ha=ha, hr=hr, gf=gf, ga=ga, gr=gr, beta=beta, ja=ja, jr=jr, jf=jf)
 
     def reduce(self, grid: Grid, reducer: Reducer) -> np.ndarray:
         distribution = np.full((self.lshell_range, self.radian_range), -1.0, dtype=float)

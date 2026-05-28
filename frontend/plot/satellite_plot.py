@@ -132,6 +132,7 @@ class SatellitePlot:
         show: bool = True,
         figure_size: tuple[float, float] = (9, 8),
     ) -> None:
+        # добавить 1e9 если параметр J берём
         fig = self._plot_single(
             np.asarray(matrix),
             title=title,
