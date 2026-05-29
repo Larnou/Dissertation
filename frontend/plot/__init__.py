@@ -1,4 +1,5 @@
 from frontend.plot.availability_periods import plot_availability_periods, read_periods, read_time_series
+from frontend.plot.dynamic import plot_component_dynamics
 from frontend.plot.global_histogram import show_hist_sectors, show_hist_sectors_from_long
 from frontend.plot.heatmap import (
     plot_beta_h_count_heatmap,
@@ -16,6 +17,7 @@ from frontend.plot.shue_model import plot_shue_model, read_shue_dataset
 __all__ = [
     "SatellitePlot",
     "plot_availability_periods",
+    "plot_component_dynamics",
     "show_hist_sectors",
     "show_hist_sectors_from_long",
     "plot_beta_h_count_heatmap",
