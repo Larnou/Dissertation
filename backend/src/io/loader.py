@@ -5,7 +5,8 @@ from typing import Literal
 import pandas as pd
 
 from backend.src.config.schemas import AppConfig
-from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
+from backend.src.io.kyoto import KYOTO_AE_DATASET_STEM, read_and_save_kyoto_ae
+from backend.src.io.parquet import read_data_from_parquet, read_kyoto_from_parquet, save_data_to_parquet
 from backend.src.io.raw_data import RawData
 from backend.src.processing.services.build_beta_dataset import build_beta_dataset
 from backend.src.processing.services.build_shue_dataset import build_shue_dataset
@@ -19,6 +20,35 @@ DATASET_OMNI = "omn"
 DATASET_SSC = "ssc"
 DATASET_STATE = "sta"
 DATASET_MOM = "mom"
+DATASET_AE = KYOTO_AE_DATASET_STEM
+
+
+@dataclass(init=False)
+class KyotoLoading:
+    """
+    Загрузка минутных индексов AE из Kyoto WDC.
+
+    ``load_from_request=True`` — парсинг ``*.for.request`` и сохранение в parquet.
+    ``load_from_request=False`` — чтение готового ``ae.parquet`` из каталога Kyoto.
+    """
+
+    config: AppConfig
+    load_from_request: bool
+
+    def __init__(self, parameters: AppConfig, load_from_request: bool) -> None:
+        self.config = AppConfig.model_validate(dict(parameters))
+        self.load_from_request = load_from_request
+
+    def read_from_disk(self, stem: str = DATASET_AE) -> pd.DataFrame:
+        return read_kyoto_from_parquet(self.config, stem)
+
+    def parse_from_request(self, stem: str = DATASET_AE) -> pd.DataFrame:
+        return read_and_save_kyoto_ae(self.config, dataset_stem=stem)
+
+    def get_ae_data(self, stem: str = DATASET_AE) -> pd.DataFrame:
+        if self.load_from_request:
+            return self.parse_from_request(stem)
+        return self.read_from_disk(stem)
 
 
 @dataclass(init=False)
