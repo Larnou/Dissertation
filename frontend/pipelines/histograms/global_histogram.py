@@ -60,8 +60,8 @@ def main() -> None:
     # Доступные parameter: G, H
     # Доступные компоненты: f, r, a
     config = get_config()
-    parameter = "H"
-    component = "r"
+    parameter = "J"
+    component = "a"
     lfrom = 4
     lto = 16
 

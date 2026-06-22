@@ -1,5 +1,26 @@
-from backend.src.io.cdaweb import CDAweb
-from backend.src.io.loader import DataDownloading
-from backend.src.io.raw_data import RawData
+from backend.src.io.kyoto_ae import parse_kyoto_ae_file, read_kyoto_ae_directory, save_kyoto_ae_to_parquet
 
-__all__ = ["CDAweb", "DataDownloading", "RawData"]
+__all__ = [
+    "CDAweb",
+    "DataDownloading",
+    "RawData",
+    "parse_kyoto_ae_file",
+    "read_kyoto_ae_directory",
+    "save_kyoto_ae_to_parquet",
+]
+
+
+def __getattr__(name: str):
+    if name == "CDAweb":
+        from backend.src.io.cdaweb import CDAweb
+
+        return CDAweb
+    if name == "DataDownloading":
+        from backend.src.io.loader import DataDownloading
+
+        return DataDownloading
+    if name == "RawData":
+        from backend.src.io.raw_data import RawData
+
+        return RawData
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import Normalize
+from matplotlib.colors import AsinhNorm, Normalize
 
 
 @dataclass(slots=True)
@@ -34,17 +34,66 @@ class SatellitePlot:
                 label.set_verticalalignment("top")
 
     def _colorbar_ticks(self, matrix: np.ndarray, bins_multiplier: int) -> tuple[np.ndarray, int]:
-        min_val = 0.0
-        max_val = float(np.nanmax(matrix))
+        valid = matrix[~np.isnan(matrix)]
         tick_count = 5
-        if max_val > 10:
+        if valid.size == 0:
+            ticks = np.linspace(0.0, 1.0, tick_count + 1)
+            return ticks, (len(ticks) - 1) * bins_multiplier
+
+        min_val = float(np.min(valid))
+        max_val = float(np.max(valid))
+        if min_val >= 0:
+            min_val = 0.0
+
+        if min_val < 0:
+            bound = max(abs(min_val), abs(max_val))
+            if bound > 10:
+                bound = self._round_up(bound, -1)
+            elif bound > 1:
+                bound = round(bound, 1)
+            elif bound > 0.01:
+                bound = round(bound, 2)
+            else:
+                decimals = max(0, -int(np.floor(np.log10(bound))) + 1) if bound > 0 else 2
+                bound = round(bound, decimals)
+            ticks = np.linspace(-bound, bound, tick_count + 1)
+            decimals = 0 if bound >= 10 else (1 if bound >= 1 else 2)
+            ticks = np.round(ticks, decimals)
+        elif max_val > 10:
             ticks = np.linspace(min_val, self._round_up(max_val, -1), tick_count + 1)
             ticks = np.round(ticks, 0)
-        else:
+        elif max_val > 1:
             ticks = np.linspace(min_val, round(max_val, 1), tick_count + 1)
+            ticks = np.round(ticks, 1)
+        elif max_val > 0.01:
+            ticks = np.linspace(min_val, round(max_val, 2), tick_count + 1)
             ticks = np.round(ticks, 2)
+        else:
+            decimals = max(0, -int(np.floor(np.log10(max_val))) + 1) if max_val > 0 else 2
+            ticks = np.linspace(min_val, round(max_val, decimals), tick_count + 1)
+            ticks = np.round(ticks, decimals)
+
         bins = (len(ticks) - 1) * bins_multiplier
         return ticks, bins
+
+    def _robust_symmetric_bound(self, valid: np.ndarray, percentile: float = 99) -> float:
+        bound = float(np.percentile(np.abs(valid), percentile))
+        if bound <= 0:
+            bound = float(np.max(np.abs(valid))) or 1.0
+        if bound > 10:
+            return self._round_up(bound, -1)
+        if bound > 1:
+            return math.ceil(bound * 10) / 10
+        if bound > 0.1:
+            return math.ceil(bound * 100) / 100
+        decimals = max(0, -int(np.floor(np.log10(bound))) + 1)
+        return math.ceil(bound * 10**decimals) / 10**decimals
+
+    def _asinh_norm(self, matrix: np.ndarray) -> AsinhNorm:
+        valid = matrix[~np.isnan(matrix)]
+        bound = self._robust_symmetric_bound(valid)
+        linear_width = max(float(np.percentile(np.abs(valid), 75)), 0.05)
+        return AsinhNorm(vmin=-bound, vmax=bound, linear_width=linear_width)
 
     def _build_mesh(
         self,
@@ -53,22 +102,28 @@ class SatellitePlot:
         data_matrix: np.ndarray,
         theta: np.ndarray,
         radius: np.ndarray,
-        ticks: np.ndarray,
+        ticks: np.ndarray | None,
         bins: int,
         title: str,
         max_lshell: int,
+        *,
+        norm: Normalize | AsinhNorm | None = None,
+        cmap_name: str = "turbo",
     ) -> None:
-        cmap = plt.get_cmap("turbo", bins).copy()
+        cmap = plt.get_cmap(cmap_name, bins).copy()
         matrix = np.array(data_matrix, copy=True, dtype=float)
-        matrix[matrix == -1] = np.nan
+        matrix[matrix == -1] = np.nan  # sentinel for cells without data
 
-        norm = Normalize(np.nanmin(ticks), np.nanmax(ticks))
+        if norm is None:
+            norm = Normalize(np.nanmin(ticks), np.nanmax(ticks))
         cmap.set_bad(color="grey", alpha=0.5)
-        color_mesh = ax.pcolormesh(theta, radius, matrix, cmap=cmap, vmax=np.nanmax(ticks), vmin=np.nanmin(ticks))
+        color_mesh = ax.pcolormesh(theta, radius, matrix, cmap=cmap, norm=norm)
 
-        colorbar = fig.colorbar(color_mesh, orientation="vertical", pad=0.1, extend="neither")
+        extend = "both" if isinstance(norm, AsinhNorm) else "neither"
+        colorbar = fig.colorbar(color_mesh, orientation="vertical", pad=0.1, extend=extend)
         colorbar.ax.tick_params(labelsize=12)
-        colorbar.set_ticks(ticks)
+        if ticks is not None:
+            colorbar.set_ticks(ticks)
         colorbar.set_label(title, rotation=270, labelpad=20, size=12)
 
         samples_per_sector = max(int(360 / self.mlt_bins), 2)
@@ -102,17 +157,42 @@ class SatellitePlot:
         max_lshell: int = 16,
         bins_multiplier: int = 3,
         figure_size: tuple[float, float] = (9, 8),
+        value_scale: float = 1.0,
+        color_norm: str = "linear",
     ):
         max_lshell = min(max_lshell, self.lshell_range)
         radial_bins = max_lshell - self.min_lshell
         radius = np.linspace(self.min_lshell, max_lshell, radial_bins + 1)
         theta = np.linspace(0, 2 * np.pi, self.mlt_bins + 1)
-        clipped = matrix[self.min_lshell:max_lshell]
-        ticks, bins = self._colorbar_ticks(clipped, bins_multiplier=bins_multiplier)
+        clipped = np.asarray(matrix, dtype=float)[self.min_lshell:max_lshell]
+        clipped[clipped == -1] = np.nan
+        clipped = clipped * value_scale
+
+        if color_norm == "asinh":
+            norm = self._asinh_norm(clipped)
+            ticks = None
+            bins = 256
+            cmap_name = "coolwarm"
+        else:
+            norm = None
+            ticks, bins = self._colorbar_ticks(clipped, bins_multiplier=bins_multiplier)
+            cmap_name = "turbo"
 
         fig = plt.figure(figsize=figure_size, layout="constrained")
         ax = fig.add_subplot(111, polar=True)
-        self._build_mesh(fig, ax, clipped, theta, radius, ticks, bins, title, max_lshell)
+        self._build_mesh(
+            fig,
+            ax,
+            clipped,
+            theta,
+            radius,
+            ticks,
+            bins,
+            title,
+            max_lshell,
+            norm=norm,
+            cmap_name=cmap_name,
+        )
         return fig
 
     @staticmethod
@@ -131,14 +211,17 @@ class SatellitePlot:
         output_path: str | Path | None = None,
         show: bool = True,
         figure_size: tuple[float, float] = (9, 8),
+        value_scale: float = 1.0,
+        color_norm: str = "linear",
     ) -> None:
-        # добавить 1e9 если параметр J берём
         fig = self._plot_single(
             np.asarray(matrix),
             title=title,
             max_lshell=max_lshell,
             bins_multiplier=3,
             figure_size=figure_size,
+            value_scale=value_scale,
+            color_norm=color_norm,
         )
         if output_path is not None:
             fig.savefig(output_path, dpi=300)

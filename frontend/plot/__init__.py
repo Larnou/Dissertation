@@ -1,3 +1,4 @@
+from frontend.plot.ae_histogram import plot_ae_histogram_outside_h_range
 from frontend.plot.availability_periods import plot_availability_periods, read_periods, read_time_series
 from frontend.plot.dynamic import plot_component_dynamics
 from frontend.plot.global_histogram import show_hist_sectors, show_hist_sectors_from_long
@@ -16,6 +17,7 @@ from frontend.plot.shue_model import plot_shue_model, read_shue_dataset
 
 __all__ = [
     "SatellitePlot",
+    "plot_ae_histogram_outside_h_range",
     "plot_availability_periods",
     "plot_component_dynamics",
     "show_hist_sectors",

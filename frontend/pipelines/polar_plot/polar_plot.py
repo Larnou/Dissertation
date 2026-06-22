@@ -49,13 +49,18 @@ def show_plot(
     elif parameter == "Beta":
         output_path = resolver.image_file(f"polar_{parameter}_{reducer}.png")
 
+    value_scale = 1e9 if parameter == "J" else 1.0
+    color_norm = "asinh" if parameter == "J" else "linear"
+    unit_suffix = " [nA/m²]" if parameter == "J" else ""
     plotter = SatellitePlot(min_lshell=4)
     plotter.draw_polar_plot(
         matrix,
         max_lshell=min(16, matrix.shape[0]),
-        title=f"{resolver.satellite_id} {parameter}_{component}_{reducer}",
+        title=f"{resolver.satellite_id} {parameter}_{component}_{reducer}{unit_suffix}",
         output_path=output_path,
         show=True,
+        value_scale=value_scale,
+        color_norm=color_norm,
     )
 
 
@@ -66,7 +71,7 @@ def main() -> None:
 
     config = get_config()
     parameter = "J"
-    component = "r"
+    component = "a"
     reducer = "mean"
     show_plot(config, parameter, component, reducer, save_image=True)
 
