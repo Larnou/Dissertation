@@ -1,12 +1,20 @@
 from backend.src.io.kyoto_ae import parse_kyoto_ae_file, read_kyoto_ae_directory, save_kyoto_ae_to_parquet
+from backend.src.io.kyoto_symh import (
+    parse_kyoto_symh_file,
+    read_kyoto_symh_directory,
+    save_kyoto_symh_to_parquet,
+)
 
 __all__ = [
     "CDAweb",
     "DataDownloading",
     "RawData",
     "parse_kyoto_ae_file",
+    "parse_kyoto_symh_file",
     "read_kyoto_ae_directory",
+    "read_kyoto_symh_directory",
     "save_kyoto_ae_to_parquet",
+    "save_kyoto_symh_to_parquet",
 ]
 
 
