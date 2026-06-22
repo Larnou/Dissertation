@@ -55,3 +55,32 @@ def save_data_to_parquet(config: AppConfig, dataframe: pd.DataFrame, dataset_ste
 
     saved_dataframe = dataframe.reset_index(drop=True)
     saved_dataframe.to_parquet(path)
+
+
+def kyoto_file_path(config: AppConfig, dataset_stem: str) -> Path:
+    """
+    Абсолютный путь к `backend/data/Kyoto/<dataset_stem>.parquet`.
+    """
+
+    return PathResolver(config).kyoto_file(dataset_stem)
+
+
+def read_kyoto_from_parquet(config: AppConfig, dataset_stem: str) -> pd.DataFrame:
+    """
+    Читает parquet-датасет из ``backend/data/Kyoto``.
+    """
+
+    return pd.read_parquet(kyoto_file_path(config, dataset_stem))
+
+
+def save_kyoto_to_parquet(config: AppConfig, dataframe: pd.DataFrame, dataset_stem: str) -> Path:
+    """
+    Сохраняет DataFrame в parquet под ``backend/data/Kyoto``.
+    """
+
+    path = PathResolver(config).kyoto_file(dataset_stem)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    saved_dataframe = dataframe.reset_index(drop=True)
+    saved_dataframe.to_parquet(path)
+    return path

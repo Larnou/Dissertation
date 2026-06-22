@@ -1,6 +1,12 @@
 from frontend.plot.ae_histogram import plot_ae_histogram_outside_h_range
 from frontend.plot.availability_periods import plot_availability_periods, read_periods, read_time_series
-from frontend.plot.dynamic import plot_component_dynamics
+from frontend.plot.dynamic import (
+    plot_ae_dynamics,
+    plot_ae_hg_component_daily,
+    plot_ae_hg_component_rolling,
+    plot_ae_parameter_comparison,
+    plot_component_dynamics,
+)
 from frontend.plot.global_histogram import show_hist_sectors, show_hist_sectors_from_long
 from frontend.plot.heatmap import (
     plot_beta_h_count_heatmap,
@@ -19,6 +25,10 @@ __all__ = [
     "SatellitePlot",
     "plot_ae_histogram_outside_h_range",
     "plot_availability_periods",
+    "plot_ae_dynamics",
+    "plot_ae_hg_component_daily",
+    "plot_ae_hg_component_rolling",
+    "plot_ae_parameter_comparison",
     "plot_component_dynamics",
     "show_hist_sectors",
     "show_hist_sectors_from_long",

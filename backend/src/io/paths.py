@@ -7,6 +7,8 @@ from pathlib import Path
 from backend.src.config.schemas import AppConfig, TIME_FORMAT
 
 THEMIS_PREFIX = "THEMIS"
+KYOTO_DIRNAME = "Kyoto"
+DYNAMICS_DIRNAME = "dynamics"
 DATA_DIRNAME = "data"
 PERIODS_DIRNAME = "periods"
 MATRICES_DIRNAME = "matrices"
@@ -85,6 +87,50 @@ class PathResolver:
         """
 
         return (self._rooted(configured) / self.event_id / self.satellite_id).resolve()
+
+
+    def kyoto_dir(self) -> Path:
+        """
+        Каталог Kyoto WDC: ``backend/data/Kyoto`` (без привязки к событию).
+        """
+
+        data_parent = self._rooted(self.config.paths.data).parent
+        return (data_parent / KYOTO_DIRNAME).resolve()
+
+
+    def kyoto_file(self, dataset_stem: str) -> Path:
+        """
+        Путь к parquet-файлу Kyoto: ``backend/data/Kyoto/<stem>.parquet``.
+        """
+
+        stem = _safe_name("dataset stem", dataset_stem, suffix=".parquet")
+        return (self.kyoto_dir() / f"{stem}.parquet").resolve()
+
+
+    def kyoto_source_file(self, file_name: str) -> Path:
+        """
+        Путь к исходному файлу Kyoto (например ``ae1701.for.request``).
+        """
+
+        safe_name = _safe_name("kyoto source file name", file_name)
+        return (self.kyoto_dir() / safe_name).resolve()
+
+
+    def kyoto_dynamics_dir(self) -> Path:
+        """
+        Каталог графиков динамики Kyoto: ``backend/data/Kyoto/dynamics``.
+        """
+
+        return (self.kyoto_dir() / DYNAMICS_DIRNAME).resolve()
+
+
+    def kyoto_dynamics_file(self, file_name: str) -> Path:
+        """
+        Путь к PNG-графику в ``backend/data/Kyoto/dynamics``.
+        """
+
+        safe_name = _safe_name("kyoto dynamics file name", file_name)
+        return (self.kyoto_dynamics_dir() / safe_name).resolve()
 
 
     def data_file(self, dataset_stem: str) -> Path:
