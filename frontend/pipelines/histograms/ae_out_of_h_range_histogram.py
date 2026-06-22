@@ -1,4 +1,5 @@
 from pathlib import Path
+from collections.abc import Sequence
 import sys
 
 import matplotlib
@@ -80,16 +81,16 @@ def build_ae_h_dataset(config: AppConfig, component: str) -> pd.DataFrame:
 
 
 def _format_number_for_filename(value: float) -> str:
-    return f"{value:g}".replace("-", "m").replace(".", "p")
+    return f"{value:g}".replace("-", "m").replace(".", "-")
 
 
 def show_plot(
     config: AppConfig,
     component: str,
-    h_value: float,
-    delta: float,
+    excluded_range: Sequence[float],
     bins: int = 40,
     smooth_window: int = 5,
+    log_scale: bool = False,
     save_image: bool = False,
     show: bool = True,
 ) -> Path:
@@ -99,17 +100,18 @@ def show_plot(
     output_path = None
     if save_image:
         normalized_component = component.lower()
-        h_value_part = _format_number_for_filename(h_value)
-        delta_part = _format_number_for_filename(delta)
-        output_path = resolver.image_file(f"hist_ae_outside_H_{normalized_component}_h{h_value_part}_d{delta_part}.png")
+        lower_part = _format_number_for_filename(float(excluded_range[0]))
+        upper_part = _format_number_for_filename(float(excluded_range[1]))
+        suffix = "_log" if log_scale else ""
+        output_path = resolver.image_file(f"hist_ae_outside_H_{normalized_component}_{lower_part}_{upper_part}{suffix}.png")
 
     return plot_ae_histogram_outside_h_range(
         data=ae_h_data,
         component=component,
-        h_value=h_value,
-        delta=delta,
+        excluded_range=excluded_range,
         bins=bins,
         smooth_window=smooth_window,
+        log_scale=log_scale,
         output_path=output_path,
         show=show,
     )
@@ -119,17 +121,20 @@ def main() -> None:
     config = get_config()
     component = "a"
     h_value = 1
-    delta = 0.2
+    delta = 0.3
+    range = [0.3, 2]
+    # range = [h_value - delta, h_value + delta]
     bins = 40
     smooth_window = 5
+    log_scale = True
 
     show_plot(
         config=config,
         component=component,
-        h_value=h_value,
-        delta=delta,
+        excluded_range=range,
         bins=bins,
         smooth_window=smooth_window,
+        log_scale=log_scale,
         save_image=True,
         show=True,
     )
