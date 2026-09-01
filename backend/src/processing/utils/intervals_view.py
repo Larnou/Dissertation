@@ -1,50 +1,43 @@
 from dataclasses import dataclass
-from typing import TypeAlias, Literal
 
 import pandas as pd
 
-DataSourceKind: TypeAlias = Literal[
-    "fgm",
-    "esa_ion",
-    "esa_electron",
-    "efi",
-    "ssc",
-    "sta",
-    "omn",
-    "shue",
-    "beta",
-]
+from backend.src.io.paths import AvailabilitySource, DerivedDataset, Instrument
 
-TimeInterval: TypeAlias = tuple[pd.Timestamp, pd.Timestamp]
+
+TimeInterval = tuple[pd.Timestamp, pd.Timestamp]
 
 
 @dataclass(frozen=True, slots=True)
 class AvailabilityRule:
+    """
+    Правило определения интервалов доступности для источника данных.
+    """
+
     required_col: str
     min_hole_seconds: float
     min_interval_seconds: float
 
 
-RULES: dict[DataSourceKind, AvailabilityRule] = {
-    "fgm": AvailabilityRule("GSM_Bx", 45, 3600),
-    "esa_ion": AvailabilityRule("GSM_Vix", 45, 3600),
-    "esa_electron": AvailabilityRule("GSM_Vex", 45, 3600),
-    "efi": AvailabilityRule("GSM_Ex", 45, 3600),
-    "ssc": AvailabilityRule("GSM_X", 90, 3600),
-    "sta": AvailabilityRule("GSM_Vsx", 90, 3600),
-    "omn": AvailabilityRule("FP", 90, 3600),
-
-    # Shue-датасет считается валидным, когда рассчитан r (и есть Time).
-    # Дыры в r обычно идут от отсутствия OMNI/SSC для мэчинга.
-    "shue": AvailabilityRule("r", 90, 3600),
-
-    # β из build_beta_dataset(FGM+MOM); дыры — слабое поле, разрывы FGM/MOM.
-    "beta": AvailabilityRule("beta", 45, 3600),
+RULES: dict[AvailabilitySource, AvailabilityRule] = {
+    Instrument.FGM: AvailabilityRule("GSM_Bx", 45, 3600),
+    Instrument.ESA_ION: AvailabilityRule("GSM_Vix", 45, 3600),
+    Instrument.ESA_ELECTRON: AvailabilityRule("GSM_Vex", 45, 3600),
+    Instrument.EFI: AvailabilityRule("GSM_Ex", 45, 3600),
+    Instrument.SSC: AvailabilityRule("GSM_X", 90, 3600),
+    Instrument.STA: AvailabilityRule("GSM_Vsx", 90, 3600),
+    Instrument.OMNI: AvailabilityRule("FP", 90, 3600),
+    DerivedDataset.SHUE: AvailabilityRule("r", 90, 3600),
+    DerivedDataset.BETA: AvailabilityRule("beta", 45, 3600),
 }
 
 
 @dataclass(frozen=True, slots=True)
 class IntervalsView:
+    """
+    Неизменяемое представление списка временных интервалов.
+    """
+
     intervals: tuple[TimeInterval, ...]
 
     def __iter__(self):

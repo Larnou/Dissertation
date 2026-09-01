@@ -3,6 +3,7 @@ import pandas as pd
 from backend.src.config import AppConfig
 from backend.src.config import get_logger
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
+from backend.src.io.paths import EventDataset
 from backend.src.processing.interpolation.df_interpolator import DFInterpolator
 from backend.src.processing.services.filter_by_min_duration import filter_datasets_by_min_duration
 
@@ -17,7 +18,7 @@ def get_or_interpolate_data(
     min_minutes: float = 25.0,
 ) -> list[pd.DataFrame]:
 
-    filename = "available_data.parquet"
+    dataset = EventDataset.AVAILABLE
 
     if interpolate:
         if not raw_datasets:
@@ -35,10 +36,9 @@ def get_or_interpolate_data(
 
         if data:
             combined = pd.concat(data).reset_index(drop=True)
-            save_data_to_parquet(parameters, combined, filename)
+            save_data_to_parquet(parameters, combined, dataset)
         return data
 
-    else:
-        loaded = read_data_from_parquet(parameters, filename, read_as_list=True)
-        logger.info("Данные загружены с диска без доп. фильтрации по длительности.")
-        return loaded
+    loaded = read_data_from_parquet(parameters, dataset, read_as_list=True)
+    logger.info("Данные загружены с диска без доп. фильтрации по длительности.")
+    return loaded

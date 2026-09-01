@@ -4,46 +4,58 @@ from datetime import timedelta
 
 from backend.src.config import AppConfig
 
+_B_NORM_EPS = 1e-12
+_ECONV_SCALE = 1000.0  # (km/s)·nT → mV/m
+
 
 class FAHCalculator:
     """
-    Класс для вычисления H-параметра в field-aligned системе координат,
-    построенной по скользящему среднему магнитного поля (тренду).
+    H- и G-параметры в field-aligned системе, построенной по тренду |B|.
+
+    Тренд B — скользящее среднее за window_filter.high_pass секунд; базис (f, a, r):
+    f ‖ B_trend, a ⊥ B_trend в плоскости (r × B), r = f × a.
     """
 
     def __init__(self, dataframe: pd.DataFrame, parameters: AppConfig):
         """
-        :param dataframe: pd.DataFrame с колонками:
-            'Time' - время (datetime)
-            'GSM_X', 'GSM_Y', 'GSM_Z' - координаты спутника (км)
-            'GSM_Bx', 'GSM_By', 'GSM_Bz' - магнитное поле (нТл)
-            'GSM_Ex', 'GSM_Ey', 'GSM_Ez' - электрическое поле (мВ/м)
-            'GSM_Vix', 'GSM_Viy', 'GSM_Viz' - скорость ионов (км/с)
-        :param parameters: AppConfig c секциями window_filter и h_parameter
-            (окно тренда поля — window_filter.high_pass, короткий период в секундах).
+        :param dataframe: Time, GSM_X/Y/Z [km], GSM_B* [nT], GSM_E* [mV/m], GSM_Vi* [km/s].
+        :param parameters: AppConfig с секциями window_filter и h_parameter.
         """
+
         self.data = dataframe
         self.window_sec = self._extract_window_sec(parameters)
         self.noise_e, self.noise_vb = self._extract_noise_levels(parameters)
-        self.time_key = 'Time'
+        self.time_key = "Time"
 
     @staticmethod
     def _extract_window_sec(parameters) -> int:
-        """Размер окна скользящего среднего для тренда B (сек): короткий период из конфига."""
+        """
+        Длительность окна тренда B [с]: window_filter.high_pass.
+        """
+
         return int(parameters.window_filter.high_pass)
 
     @staticmethod
     def _extract_noise_levels(parameters) -> tuple[float, float]:
-        """Извлекает уровни шума для E и -VxB из AppConfig."""
+        """
+        Пороги шума E и −V×B [mV/m] из h_parameter.
+        """
+
         return float(parameters.h_parameter.noise_e), float(parameters.h_parameter.noise_vb)
 
     @staticmethod
     def vector_length(comp_list):
-        """Евклидова длина вектора по трём компонентам (поэлементно)."""
-        return np.sqrt(comp_list[0]**2 + comp_list[1]**2 + comp_list[2]**2)
+        """
+        Модуль 3-вектора по трём компонентным рядам (поэлементно).
+        """
+
+        return np.sqrt(comp_list[0] ** 2 + comp_list[1] ** 2 + comp_list[2] ** 2)
 
     def get_interval_borders(self):
-        """Определяет размер окна (в точках) и половину окна."""
+        """
+        Число точек в окне тренда и его половина, оценённые по первым window_sec секундам ряда.
+        """
+
         start_time = self.data[self.time_key].iloc[0]
         end_window = start_time + timedelta(seconds=self.window_sec)
         df_window = self.data.loc[self.data[self.time_key] < end_window]
@@ -52,144 +64,146 @@ class FAHCalculator:
         return interval, half_interval
 
     def sliding_mean(self, series):
-        """Скользящее среднее с паддингом NaN на краях."""
+        """
+        Симметричное скользящее среднее; края заполняются nan.
+        """
+
         interval, _ = self.get_interval_borders()
-        conv = np.convolve(series, np.ones(interval), 'valid') / interval
+        if interval < 1:
+            return np.full(len(series), np.nan, dtype=float)
+
+        conv = np.convolve(series, np.ones(interval), "valid") / interval
         pad_left = (interval - 1) // 2
         pad_right = interval - 1 - pad_left
-        padded = np.pad(conv, (pad_left, pad_right), mode='constant', constant_values=np.nan)
+        padded = np.pad(conv, (pad_left, pad_right), mode="constant", constant_values=np.nan)
         return padded
 
     def compute_trend_field(self):
-        """Возвращает DataFrame со скользящим средним магнитного поля (трендом)."""
-        Bx_mean = self.sliding_mean(self.data['GSM_Bx'])
-        By_mean = self.sliding_mean(self.data['GSM_By'])
-        Bz_mean = self.sliding_mean(self.data['GSM_Bz'])
-        trend_df = pd.DataFrame({
-            'GSM_Bx': Bx_mean,
-            'GSM_By': By_mean,
-            'GSM_Bz': Bz_mean
-        })
+        """
+        DataFrame со скользящим средним GSM_Bx/By/Bz (тренд поля).
+        """
+
+        Bx_mean = self.sliding_mean(self.data["GSM_Bx"])
+        By_mean = self.sliding_mean(self.data["GSM_By"])
+        Bz_mean = self.sliding_mean(self.data["GSM_Bz"])
+        trend_df = pd.DataFrame(
+            {
+                "GSM_Bx": Bx_mean,
+                "GSM_By": By_mean,
+                "GSM_Bz": Bz_mean,
+            }
+        )
         return trend_df
 
     def compute_fa_basis(self, b_field_df, coords_df):
         """
-        По заданному полю (тренд или полное) и координатам возвращает базисные векторы ef, ea, er.
-        b_field_df: DataFrame с колонками GSM_Bx, GSM_By, GSM_Bz (той же длины, что и coords_df)
-        coords_df: DataFrame с колонками GSM_X, GSM_Y, GSM_Z
-        """
-        Bx = b_field_df['GSM_Bx']
-        By = b_field_df['GSM_By']
-        Bz = b_field_df['GSM_Bz']
-        Bnorm = self.vector_length([Bx, By, Bz])
-        ef_x = Bx / Bnorm
-        ef_y = By / Bnorm
-        ef_z = Bz / Bnorm
-        ef = pd.DataFrame({'x': ef_x, 'y': ef_y, 'z': ef_z})
+        Ортонормированный базис (e_f, e_a, e_r) по B и координатам спутника.
 
-        X = coords_df['GSM_X']
-        Y = coords_df['GSM_Y']
-        Z = coords_df['GSM_Z']
+        e_f ‖ B, e_a ∝ r × e_f, e_r = e_a × e_f; при |B|≈0 или |r×B|≈0 — nan.
+        """
+
+        Bx = b_field_df["GSM_Bx"]
+        By = b_field_df["GSM_By"]
+        Bz = b_field_df["GSM_Bz"]
+        Bnorm = self.vector_length([Bx, By, Bz])
+        safe_bnorm = np.where(Bnorm > _B_NORM_EPS, Bnorm, np.nan)
+        ef_x = Bx / safe_bnorm
+        ef_y = By / safe_bnorm
+        ef_z = Bz / safe_bnorm
+        ef = pd.DataFrame({"x": ef_x, "y": ef_y, "z": ef_z})
+
+        X = coords_df["GSM_X"]
+        Y = coords_df["GSM_Y"]
+        Z = coords_df["GSM_Z"]
         ea_x = Y * ef_z - Z * ef_y
         ea_y = Z * ef_x - X * ef_z
         ea_z = X * ef_y - Y * ef_x
         eanorm = self.vector_length([ea_x, ea_y, ea_z])
-        ea_x = ea_x / eanorm
-        ea_y = ea_y / eanorm
-        ea_z = ea_z / eanorm
-        ea = pd.DataFrame({'x': ea_x, 'y': ea_y, 'z': ea_z})
+        safe_eanorm = np.where(eanorm > _B_NORM_EPS, eanorm, np.nan)
+        ea_x = ea_x / safe_eanorm
+        ea_y = ea_y / safe_eanorm
+        ea_z = ea_z / safe_eanorm
+        ea = pd.DataFrame({"x": ea_x, "y": ea_y, "z": ea_z})
 
         er_x = ea_y * ef_z - ea_z * ef_y
         er_y = ea_z * ef_x - ea_x * ef_z
         er_z = ea_x * ef_y - ea_y * ef_x
-        er = pd.DataFrame({'x': er_x, 'y': er_y, 'z': er_z})
+        er = pd.DataFrame({"x": er_x, "y": er_y, "z": er_z})
 
         return ef, ea, er
 
     def compute_econv(self):
-        """Вычисляет E_conv = -V × B (в мВ/м)."""
-        Vx = self.data['GSM_Vix']
-        Vy = self.data['GSM_Viy']
-        Vz = self.data['GSM_Viz']
-        Bx = self.data['GSM_Bx']
-        By = self.data['GSM_By']
-        Bz = self.data['GSM_Bz']
+        """
+        Конвективное поле E_conv = −V × B [mV/m]; V [km/s], B [nT].
+        """
+
+        Vx = self.data["GSM_Vix"]
+        Vy = self.data["GSM_Viy"]
+        Vz = self.data["GSM_Viz"]
+        Bx = self.data["GSM_Bx"]
+        By = self.data["GSM_By"]
+        Bz = self.data["GSM_Bz"]
 
         cross_x = Vy * Bz - Vz * By
         cross_y = Vz * Bx - Vx * Bz
         cross_z = Vx * By - Vy * Bx
 
-        Econv_x = -cross_x / 1000.0
-        Econv_y = -cross_y / 1000.0
-        Econv_z = -cross_z / 1000.0
+        Econv_x = -cross_x / _ECONV_SCALE
+        Econv_y = -cross_y / _ECONV_SCALE
+        Econv_z = -cross_z / _ECONV_SCALE
 
-        return pd.DataFrame({
-            'GSM_Ex_conv': Econv_x,
-            'GSM_Ey_conv': Econv_y,
-            'GSM_Ez_conv': Econv_z
-        })
-
+        return pd.DataFrame(
+            {
+                "GSM_Ex_conv": Econv_x,
+                "GSM_Ey_conv": Econv_y,
+                "GSM_Ez_conv": Econv_z,
+            }
+        )
 
     def compute_g_parameter(self, E_meas, VxB_conv):
         """
-        Вычисление G-параметра по формуле:
-        G = |E_n| / sqrt(E_n^2 + (VxB)_n^2)
-
-        Параметры:
-        - E_meas: измеренное электрическое поле (E_f_meas, E_a_meas, E_r_meas)
-        - VxB_conv: конвективное поле (X_f_conv, X_a_conv, X_r_conv)
-
-        Возвращает:
-        - G: массив значений G-параметра (от 0 до 1)
+        G = |E| / sqrt(E² + (V×B)²); диапазон [0, 1].
         """
-        # Добавляем малую константу для избежания деления на ноль
+
         eps = 1e-10
-
-        # Вычисляем знаменатель
-        denominator = np.sqrt(E_meas**2 + VxB_conv**2 + eps)
-
-        # Вычисляем G = |E_meas| / denominator
+        denominator = np.sqrt(E_meas ** 2 + VxB_conv ** 2 + eps)
         G = np.abs(E_meas) / denominator
-
-        # Ограничиваем значения диапазоном [0, 1] (на всякий случай)
-        G = np.clip(G, 0.0, 1.0)
-
-        return G
+        return np.clip(G, 0.0, 1.0)
 
     @staticmethod
     def _project(vec_df, basis_df):
-        return vec_df['x']*basis_df['x'] + vec_df['y']*basis_df['y'] + vec_df['z']*basis_df['z']
+        """
+        Скalarная проекция vec на unit-basis (поэлементное скалярное произведение).
+        """
+
+        return vec_df["x"] * basis_df["x"] + vec_df["y"] * basis_df["y"] + vec_df["z"] * basis_df["z"]
 
     def _prepare_fa_components(self):
+        """
+        Проекции E, E_conv и V на fa-базис после обрезки краёв окна тренда.
+        """
+
         interval, half_interval = self.get_interval_borders()
         if half_interval == 0:
             raise ValueError("Окно слишком мало для расчёта скользящего среднего.")
 
-        # Обрезаем исходные данные до внутренней области (удаляем края)
         df_cut = self.data.iloc[half_interval:-half_interval].reset_index(drop=True)
-        # Тренд (скользящее среднее) – также обрезаем до той же длины
-        trend_df = self.compute_trend_field()          # длина = len(self.data)
+        trend_df = self.compute_trend_field()
         trend_cut = trend_df.iloc[half_interval:-half_interval].reset_index(drop=True)
-        # Координаты спутника – обрезаем
-        coords_cut = self.data[['GSM_X', 'GSM_Y', 'GSM_Z']].iloc[half_interval:-half_interval].reset_index(drop=True)
+        coords_cut = self.data[["GSM_X", "GSM_Y", "GSM_Z"]].iloc[half_interval:-half_interval].reset_index(drop=True)
 
-        # Базис по тренду на обрезанных данных
         ef, ea, er = self.compute_fa_basis(trend_cut, coords_cut)
 
-        # Измеренное электрическое поле (обрезанное)
-        E_meas = df_cut[['GSM_Ex', 'GSM_Ey', 'GSM_Ez']]
-        E_meas.columns = ['x', 'y', 'z']
+        E_meas = df_cut[["GSM_Ex", "GSM_Ey", "GSM_Ez"]]
+        E_meas.columns = ["x", "y", "z"]
 
-        # Конвективное поле (обрезанное)
         Econv_full = self.compute_econv()
         Econv_cut = Econv_full.iloc[half_interval:-half_interval].reset_index(drop=True)
-        Econv_cut.columns = ['x', 'y', 'z']
+        Econv_cut.columns = ["x", "y", "z"]
 
-        # Скорость ионов (обрезанная)
-        V_meas = df_cut[['GSM_Vix', 'GSM_Viy', 'GSM_Viz']]
-        V_meas.columns = ['x', 'y', 'z']
+        V_meas = df_cut[["GSM_Vix", "GSM_Viy", "GSM_Viz"]]
+        V_meas.columns = ["x", "y", "z"]
 
-        # Проекции
         E_f = self._project(E_meas, ef)
         E_a = self._project(E_meas, ea)
         E_r = self._project(E_meas, er)
@@ -200,34 +214,33 @@ class FAHCalculator:
         V_a = self._project(V_meas, ea)
         V_r = self._project(V_meas, er)
 
-        # Компоненты тренда в FA (обрезанные) – для справки
-        # B_f_trend = (trend_cut['GSM_Bx']*ef['x'] + trend_cut['GSM_By']*ef['y'] + trend_cut['GSM_Bz']*ef['z'])
-        # B_a_trend = (trend_cut['GSM_Bx']*ea['x'] + trend_cut['GSM_By']*ea['y'] + trend_cut['GSM_Bz']*ea['z'])
-        # B_r_trend = (trend_cut['GSM_Bx']*er['x'] + trend_cut['GSM_By']*er['y'] + trend_cut['GSM_Bz']*er['z'])
-
         return {
-            'time': df_cut['Time'],
-            'E_f': E_f,
-            'E_a': E_a,
-            'E_r': E_r,
-            'X_f': X_f,
-            'X_a': X_a,
-            'X_r': X_r,
-            'V_f': V_f,
-            'V_a': V_a,
-            'V_r': V_r,
+            "time": df_cut["Time"],
+            "E_f": E_f,
+            "E_a": E_a,
+            "E_r": E_r,
+            "X_f": X_f,
+            "X_a": X_a,
+            "X_r": X_r,
+            "V_f": V_f,
+            "V_a": V_a,
+            "V_r": V_r,
         }
 
     def _build_result(self, components, use_noise_mask: bool):
-        E_f = components['E_f']
-        E_a = components['E_a']
-        E_r = components['E_r']
-        X_f = components['X_f']
-        X_a = components['X_a']
-        X_r = components['X_r']
-        V_f = components['V_f']
-        V_a = components['V_a']
-        V_r = components['V_r']
+        """
+        H_f/a/r и G_f/a/r; при use_noise_mask точки с |E|²+|V×B|² ≤ noise отбрасываются.
+        """
+
+        E_f = components["E_f"]
+        E_a = components["E_a"]
+        E_r = components["E_r"]
+        X_f = components["X_f"]
+        X_a = components["X_a"]
+        X_r = components["X_r"]
+        V_f = components["V_f"]
+        V_a = components["V_a"]
+        V_r = components["V_r"]
 
         G_f = self.compute_g_parameter(E_f, X_f)
         G_a = self.compute_g_parameter(E_a, X_a)
@@ -235,10 +248,10 @@ class FAHCalculator:
 
         eps = 1e-10
         if use_noise_mask:
-            delta = np.sqrt(self.noise_e**2 + self.noise_vb**2)
-            amp_f = np.sqrt(E_f**2 + X_f**2)
-            amp_a = np.sqrt(E_a**2 + X_a**2)
-            amp_r = np.sqrt(E_r**2 + X_r**2)
+            delta = np.sqrt(self.noise_e ** 2 + self.noise_vb ** 2)
+            amp_f = np.sqrt(E_f ** 2 + X_f ** 2)
+            amp_a = np.sqrt(E_a ** 2 + X_a ** 2)
+            amp_r = np.sqrt(E_r ** 2 + X_r ** 2)
             mask_f = amp_f > delta
             mask_a = amp_a > delta
             mask_r = amp_r > delta
@@ -247,38 +260,47 @@ class FAHCalculator:
             H_a = np.full_like(E_a, np.nan, dtype=float)
             H_r = np.full_like(E_r, np.nan, dtype=float)
 
-            H_f[mask_f] = (E_f[mask_f] - X_f[mask_f])**2 / (E_f[mask_f]**2 + X_f[mask_f]**2 + eps)
-            H_a[mask_a] = (E_a[mask_a] - X_a[mask_a])**2 / (E_a[mask_a]**2 + X_a[mask_a]**2 + eps)
-            H_r[mask_r] = (E_r[mask_r] - X_r[mask_r])**2 / (E_r[mask_r]**2 + X_r[mask_r]**2 + eps)
+            H_f[mask_f] = (E_f[mask_f] - X_f[mask_f]) ** 2 / (E_f[mask_f] ** 2 + X_f[mask_f] ** 2 + eps)
+            H_a[mask_a] = (E_a[mask_a] - X_a[mask_a]) ** 2 / (E_a[mask_a] ** 2 + X_a[mask_a] ** 2 + eps)
+            H_r[mask_r] = (E_r[mask_r] - X_r[mask_r]) ** 2 / (E_r[mask_r] ** 2 + X_r[mask_r] ** 2 + eps)
         else:
-            H_f = (E_f - X_f)**2 / (E_f**2 + X_f**2 + eps)
-            H_a = (E_a - X_a)**2 / (E_a**2 + X_a**2 + eps)
-            H_r = (E_r - X_r)**2 / (E_r**2 + X_r**2 + eps)
+            H_f = (E_f - X_f) ** 2 / (E_f ** 2 + X_f ** 2 + eps)
+            H_a = (E_a - X_a) ** 2 / (E_a ** 2 + X_a ** 2 + eps)
+            H_r = (E_r - X_r) ** 2 / (E_r ** 2 + X_r ** 2 + eps)
 
-        return pd.DataFrame({
-            'Time': components['time'],
-            'H_f': H_f,
-            'H_a': H_a,
-            'H_r': H_r,
-            'G_f': G_f,
-            'G_a': G_a,
-            'G_r': G_r,
-            'E_f_meas': E_f,
-            'E_a_meas': E_a,
-            'E_r_meas': E_r,
-            'X_f_conv': X_f,
-            'X_a_conv': X_a,
-            'X_r_conv': X_r,
-            'V_f_meas': V_f,
-            'V_a_meas': V_a,
-            'V_r_meas': V_r,
-        })
+        return pd.DataFrame(
+            {
+                "Time": components["time"],
+                "H_f": H_f,
+                "H_a": H_a,
+                "H_r": H_r,
+                "G_f": G_f,
+                "G_a": G_a,
+                "G_r": G_r,
+                "E_f_meas": E_f,
+                "E_a_meas": E_a,
+                "E_r_meas": E_r,
+                "X_f_conv": X_f,
+                "X_a_conv": X_a,
+                "X_r_conv": X_r,
+                "V_f_meas": V_f,
+                "V_a_meas": V_a,
+                "V_r_meas": V_r,
+            }
+        )
 
     def calculate_h_fa_noise(self):
+        """
+        H/G с маскированием точек ниже порога шума (noise_e, noise_vb).
+        """
+
         components = self._prepare_fa_components()
         return self._build_result(components, use_noise_mask=True)
 
-
     def calculate_h_fa(self):
+        """
+        H/G без маски шума по всем точкам после обрезки окна.
+        """
+
         components = self._prepare_fa_components()
         return self._build_result(components, use_noise_mask=False)

@@ -6,15 +6,16 @@ import pandas as pd
 
 from backend.src.config import get_config
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import PathResolver
+from backend.src.io.paths import Component, DistributionParameter, Reducer, paths
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 matplotlib.use("TkAgg", force=True)
 
 from frontend.plot import SatellitePlot
+
 
 def read_distribution_matrix(path: str | Path):
     resolved_path = Path(path).expanduser().resolve()
@@ -24,10 +25,16 @@ def read_distribution_matrix(path: str | Path):
 
 
 def build_path(config: AppConfig, parameter: str, component: str, reducer: str) -> Path:
-    if parameter != "Beta":
-        return PathResolver(config).distribution_file(f"distribution_{parameter}_{component}_{reducer}.csv")
-    else:
-        return PathResolver(config).distribution_file(f"distribution_{parameter}_{reducer}.csv")
+    resolver = paths(config)
+    distribution_parameter = DistributionParameter(parameter)
+    resolved_reducer = Reducer(reducer)
+    if distribution_parameter is DistributionParameter.BETA:
+        return resolver.distribution_map(distribution_parameter, resolved_reducer)
+    return resolver.distribution_map(
+        distribution_parameter,
+        resolved_reducer,
+        component=Component(component),
+    )
 
 
 def show_plot(
@@ -37,17 +44,17 @@ def show_plot(
     reducer: str,
     save_image: bool = False,
 ) -> None:
-    resolver = PathResolver(config)
-    path = build_path(config, parameter, component, reducer)
-    matrix = read_distribution_matrix(path)
+    resolver = paths(config)
+    matrix_path = build_path(config, parameter, component, reducer)
+    matrix = read_distribution_matrix(matrix_path)
     print(f"Using matplotlib backend: {matplotlib.get_backend()}")
     print("Opening interactive plot window...")
 
     output_path = None
     if save_image and parameter != "Beta":
-        output_path = resolver.image_file(f"polar_{parameter}_{component}_{reducer}.png")
-    elif parameter == "Beta":
-        output_path = resolver.image_file(f"polar_{parameter}_{reducer}.png")
+        output_path = resolver.image(f"polar_{parameter}_{component}_{reducer}")
+    elif save_image and parameter == "Beta":
+        output_path = resolver.image(f"polar_{parameter}_{reducer}")
 
     value_scale = 1e9 if parameter == "J" else 1.0
     color_norm = "asinh" if parameter == "J" else "linear"
@@ -65,17 +72,14 @@ def show_plot(
 
 
 def main() -> None:
-    # Доступные parameter: G, H, Beta, J
-    # Доступные компоненты: f, r, a
-    # Доступные reducer: mean, median, q25, q75
-
     config = get_config()
-    parameter = "J"
-    component = "a"
-    reducer = "mean"
-    show_plot(config, parameter, component, reducer, save_image=True)
-
-
+    show_plot(
+        config=config,
+        parameter="J",
+        component="a",
+        reducer="mean",
+        save_image=True,
+    )
 
 
 if __name__ == "__main__":

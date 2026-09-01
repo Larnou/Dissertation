@@ -4,7 +4,8 @@ import pandas as pd
 
 from backend.src.config import get_config
 from backend.src.processing.services.availability import AvailabilityService
-from backend.src.processing.utils.intervals_view import DataSourceKind, IntervalsView
+from backend.src.io.paths import AvailabilitySource
+from backend.src.processing.utils.intervals_view import IntervalsView
 from frontend.plot.availability_plot import (
     show_availability,
     show_combined_intervals,
@@ -25,11 +26,11 @@ class AvailabilityIntervals:
     time_col: str = "Time"
     show_progress: bool = True
 
-    def from_dataframe(self, dataframe: pd.DataFrame, data_type: DataSourceKind) -> IntervalsView:
+    def from_dataframe(self, dataframe: pd.DataFrame, data_type: AvailabilitySource) -> IntervalsView:
         service = AvailabilityService(time_col=self.time_col, show_progress=self.show_progress)
         return service.from_dataframe(dataframe, data_type, config=config, save_csv=True)
 
-    def show(self, dataframe: pd.DataFrame, intervals: IntervalsView, data_type: DataSourceKind) -> None:
+    def show(self, dataframe: pd.DataFrame, intervals: IntervalsView, data_type: AvailabilitySource) -> None:
         show_availability(dataframe, intervals, data_type)
 
     def show_intervals(self, dataframe: pd.DataFrame, intervals_list: list[dict]) -> None:

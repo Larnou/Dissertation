@@ -1,23 +1,19 @@
-from pathlib import Path
-
 from backend.src.config import get_config, get_logger
-from backend.src.io.parquet import data_file_path
+from backend.src.io.paths import EventDataset, KyotoIndex, paths
 from backend.src.processing.interpolation import add_symh_index_to_available_data
 
 logger = get_logger()
 config = get_config()
+resolver = paths(config)
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-KYOTO_SYMH_PATH = PROJECT_ROOT / "backend" / "data" / "kyoto" / "sym_index" / "symh.parquet"
-AVAILABLE_DATASET_STEM = "available_data"
-available_data_path = data_file_path(config, AVAILABLE_DATASET_STEM)
+kyoto_symh_path = resolver.kyoto.index_parquet(KyotoIndex.SYMH)
+available_data_path = resolver.dataset(EventDataset.AVAILABLE)
 
-
-logger.info(f"Загрузка Kyoto SYM-H index: {KYOTO_SYMH_PATH}")
+logger.info(f"Загрузка Kyoto SYM-H index: {kyoto_symh_path}")
 logger.info(f"Дополнение available_data: {available_data_path}")
 
 updated = add_symh_index_to_available_data(
-    symh_path=KYOTO_SYMH_PATH,
+    symh_path=kyoto_symh_path,
     available_data_path=available_data_path,
 )
 

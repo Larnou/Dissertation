@@ -6,9 +6,9 @@ import pandas as pd
 
 from backend.src.config import get_config
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import PathResolver
+from backend.src.io.paths import Component, DistributionParameter, Reducer, paths
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -33,12 +33,15 @@ def build_paths(
     if len(reducers) != 4:
         raise ValueError("reducers must contain exactly four values, for example ['mean', 'median', 'q25', 'q75'].")
 
-    resolver = PathResolver(config)
-    mean_path = resolver.distribution_file(f"distribution_{parameter}_{component}_{reducers[0]}.csv")
-    median_path = resolver.distribution_file(f"distribution_{parameter}_{component}_{reducers[1]}.csv")
-    q1_path = resolver.distribution_file(f"distribution_{parameter}_{component}_{reducers[2]}.csv")
-    q3_path = resolver.distribution_file(f"distribution_{parameter}_{component}_{reducers[3]}.csv")
-    return mean_path, median_path, q1_path, q3_path
+    resolver = paths(config)
+    distribution_parameter = DistributionParameter(parameter)
+    resolved_component = Component(component)
+    return (
+        resolver.distribution_map(distribution_parameter, Reducer(reducers[0]), component=resolved_component),
+        resolver.distribution_map(distribution_parameter, Reducer(reducers[1]), component=resolved_component),
+        resolver.distribution_map(distribution_parameter, Reducer(reducers[2]), component=resolved_component),
+        resolver.distribution_map(distribution_parameter, Reducer(reducers[3]), component=resolved_component),
+    )
 
 
 def show_plot(
@@ -48,7 +51,7 @@ def show_plot(
     reducers: list[str],
     save_image: bool = False,
 ) -> None:
-    resolver = PathResolver(config)
+    resolver = paths(config)
     mean_path, median_path, q1_path, q3_path = build_paths(config, parameter, component, reducers)
 
     mean_data = read_matrix(mean_path)
@@ -58,7 +61,9 @@ def show_plot(
 
     output_path = None
     if save_image:
-        output_path = resolver.image_file(f"hparam_four_{parameter}_{component}_{reducers[0]}_{reducers[1]}_{reducers[2]}_{reducers[3]}.png")
+        output_path = resolver.image(
+            f"hparam_four_{parameter}_{component}_{reducers[0]}_{reducers[1]}_{reducers[2]}_{reducers[3]}"
+        )
     SatellitePlot().draw_hparam_four_plots(
         mean_matrix=mean_data,
         median_matrix=median_data,
@@ -76,15 +81,14 @@ def show_plot(
 
 
 def main() -> None:
-    # Доступные parameter: G, H
-    # Доступные компоненты: f, r, a
-    # Доступные reducer: mean, median, q25, q75
-
     config = get_config()
-    parameter = "H"
-    component = "r"
-    reducers = ["mean", "median", "q25", "q75"]
-    show_plot(config, parameter, component, reducers, save_image=True)
+    show_plot(
+        config=config,
+        parameter="H",
+        component="r",
+        reducers=["mean", "median", "q25", "q75"],
+        save_image=True,
+    )
 
 
 if __name__ == "__main__":

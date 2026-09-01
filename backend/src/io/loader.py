@@ -5,22 +5,13 @@ from typing import Literal
 import pandas as pd
 
 from backend.src.config.schemas import AppConfig
-from backend.src.io.kyoto import KYOTO_AE_DATASET_STEM, read_and_save_kyoto_ae
-from backend.src.io.parquet import read_data_from_parquet, read_kyoto_from_parquet, save_data_to_parquet
+from backend.src.io.kyoto_ae import read_kyoto_ae_directory
+from backend.src.io.parquet import read_data_from_parquet, read_kyoto_index, save_data_to_parquet, save_kyoto_index
+from backend.src.io.paths import DerivedDataset, Instrument, KyotoIndex, paths
 from backend.src.io.raw_data import RawData
+from backend.src.processing.interpolation.interpolate_omn_dataset import interpolate_omn_dataset
 from backend.src.processing.services.build_beta_dataset import build_beta_dataset
 from backend.src.processing.services.build_shue_dataset import build_shue_dataset
-from backend.src.processing.interpolation.interpolate_omn_dataset import interpolate_omn_dataset
-
-# Логические имена файлов (stem) внутри .../events/<даты>/THEMIS-X/
-DATASET_ELECTRIC_FIELD = "efi"
-# DATASET_PARTICLE_VELOCITY = "esa_*"
-DATASET_MAGNETIC_FIELD = "fgm"
-DATASET_OMNI = "omn"
-DATASET_SSC = "ssc"
-DATASET_STATE = "sta"
-DATASET_MOM = "mom"
-DATASET_AE = KYOTO_AE_DATASET_STEM
 
 
 @dataclass(init=False)
@@ -39,16 +30,19 @@ class KyotoLoading:
         self.config = AppConfig.model_validate(dict(parameters))
         self.load_from_request = load_from_request
 
-    def read_from_disk(self, stem: str = DATASET_AE) -> pd.DataFrame:
-        return read_kyoto_from_parquet(self.config, stem)
+    def read_from_disk(self, index: KyotoIndex = KyotoIndex.AE) -> pd.DataFrame:
+        return read_kyoto_index(self.config, index)
 
-    def parse_from_request(self, stem: str = DATASET_AE) -> pd.DataFrame:
-        return read_and_save_kyoto_ae(self.config, dataset_stem=stem)
+    def parse_from_request(self, index: KyotoIndex = KyotoIndex.AE) -> pd.DataFrame:
+        source_dir = paths(self.config).kyoto.source_dir(index)
+        dataframe = read_kyoto_ae_directory(source_dir)
+        save_kyoto_index(self.config, dataframe, index)
+        return dataframe
 
-    def get_ae_data(self, stem: str = DATASET_AE) -> pd.DataFrame:
+    def get_ae_data(self, index: KyotoIndex = KyotoIndex.AE) -> pd.DataFrame:
         if self.load_from_request:
-            return self.parse_from_request(stem)
-        return self.read_from_disk(stem)
+            return self.parse_from_request(index)
+        return self.read_from_disk(index)
 
 
 @dataclass(init=False)
@@ -70,71 +64,62 @@ class DataDownloading:
         self.config = AppConfig.model_validate(dict(parameters))
         self.load_from_cdaweb = load_from_cdaweb
 
-
-    def read_from_disk(self, stem: str) -> pd.DataFrame:
-        """Читает ``<stem>.parquet`` из каталога события (локальный диск)."""
-        return read_data_from_parquet(self.config, stem)
-
-
-    def fetch_from_cdaweb(self, stem: str, fetch: Callable[[RawData], pd.DataFrame]) -> pd.DataFrame:
+    def read_from_disk(self, source: Instrument | DerivedDataset) -> pd.DataFrame:
         """
-        Скачивает данные через ``RawData``, сохраняет в ``<stem>.parquet`` и возвращает DataFrame.
+        Читает parquet инструмента из каталога события.
+        """
+
+        return read_data_from_parquet(self.config, source)
+
+    def fetch_from_cdaweb(self, source: Instrument, fetch: Callable[[RawData], pd.DataFrame]) -> pd.DataFrame:
+        """
+        Скачивает данные через ``RawData``, сохраняет в parquet и возвращает DataFrame.
         """
 
         raw_data = RawData(self.config)
         dataframe = fetch(raw_data)
-
-        save_data_to_parquet(self.config, dataframe, stem)
+        save_data_to_parquet(self.config, dataframe, source)
         return dataframe
 
-
-    def _load_by_source(self, stem: str, fetch: Callable[[RawData], pd.DataFrame]) -> pd.DataFrame:
+    def _load_by_source(self, source: Instrument, fetch: Callable[[RawData], pd.DataFrame]) -> pd.DataFrame:
         if self.load_from_cdaweb:
-            return self.fetch_from_cdaweb(stem, fetch)
-        return self.read_from_disk(stem)
-
+            return self.fetch_from_cdaweb(source, fetch)
+        return self.read_from_disk(source)
 
     def get_ssc_data(self) -> pd.DataFrame:
-        stem = DATASET_SSC
-        return self._load_by_source(stem, lambda r: r.get_ssc_dataframe())
+        return self._load_by_source(Instrument.SSC, lambda raw: raw.get_ssc_dataframe())
 
     def get_fgm_data(self) -> pd.DataFrame:
-        stem = DATASET_MAGNETIC_FIELD
-        return self._load_by_source(stem, lambda r: r.get_fgm_dataframe())
+        return self._load_by_source(Instrument.FGM, lambda raw: raw.get_fgm_dataframe())
 
     def get_esa_data(self, particle: Literal["ion", "electron"]) -> pd.DataFrame:
-        stem = f"esa_{particle}"
-        return self._load_by_source(stem, lambda r: r.get_esa_dataframe(particle))
+        source = Instrument.ESA_ION if particle == "ion" else Instrument.ESA_ELECTRON
+        return self._load_by_source(source, lambda raw: raw.get_esa_dataframe(particle))
 
     def get_efi_data(self) -> pd.DataFrame:
-        stem = DATASET_ELECTRIC_FIELD
-        return self._load_by_source(stem, lambda r: r.get_efi_dataframe())
+        return self._load_by_source(Instrument.EFI, lambda raw: raw.get_efi_dataframe())
 
     def get_sta_data(self) -> pd.DataFrame:
-        stem = DATASET_STATE
-        return self._load_by_source(stem, lambda r: r.get_sta_dataframe())
+        return self._load_by_source(Instrument.STA, lambda raw: raw.get_sta_dataframe())
 
     def get_omn_data(self) -> pd.DataFrame:
-        stem = DATASET_OMNI
-        raw_omn_dataset = self._load_by_source(stem, lambda r: r.get_omn_dataframe())
+        raw_omn_dataset = self._load_by_source(Instrument.OMNI, lambda raw: raw.get_omn_dataframe())
         return interpolate_omn_dataset(omn_data=raw_omn_dataset)
 
     def get_mom_data(self) -> pd.DataFrame:
-        """``mom.parquet`` с CDAWeb: Time, Ion_pressure (eV/см³)."""
-        stem = DATASET_MOM
-        return self._load_by_source(stem, lambda r: r.get_mom_dataframe())
+        """
+        ``mom.parquet`` с CDAWeb: Time, Ion_pressure (eV/см³).
+        """
+
+        return self._load_by_source(Instrument.MOM, lambda raw: raw.get_mom_dataframe())
 
     def get_beta_data(self) -> pd.DataFrame:
         """
         FGM + MOM через :func:`build_beta_dataset` — колонки Time, beta, Ion_pressure, GSM_B*.
-
-        Не путать с :meth:`get_mom_data` (только MOM); для пайплайна с интерполяцией
-        обычно подают FGM и MOM отдельно, а β можно посчитать по смёрженной таблице.
         """
 
         fgm_data = self.get_fgm_data()
         mom_data = self.get_mom_data()
-
         return build_beta_dataset(fgm_data=fgm_data, mom_data=mom_data)
 
     def get_shue_data(self) -> pd.DataFrame:

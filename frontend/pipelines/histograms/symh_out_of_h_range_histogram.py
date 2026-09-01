@@ -15,7 +15,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 matplotlib.use("TkAgg", force=True)
 
-from frontend.plot import plot_ae_histogram_inside_h_range
+from frontend.plot import plot_symh_histogram_inside_h_range
 
 
 def _to_utc_naive(series: pd.Series) -> pd.Series:
@@ -26,7 +26,7 @@ def _to_utc_naive(series: pd.Series) -> pd.Series:
     )
 
 
-def build_ae_h_dataset(config: AppConfig, component: str) -> pd.DataFrame:
+def build_symh_h_dataset(config: AppConfig, component: str) -> pd.DataFrame:
     normalized_component = component.lower()
     h_column = f"H_{normalized_component}"
     resolver = paths(config)
@@ -34,7 +34,7 @@ def build_ae_h_dataset(config: AppConfig, component: str) -> pd.DataFrame:
     if h_column in available_data.columns:
         return available_data
 
-    required_available_columns = ("Time", "AE")
+    required_available_columns = ("Time", "SYMH")
     missing_available = [column for column in required_available_columns if column not in available_data.columns]
     if missing_available:
         raise KeyError(f"Required columns are missing in available_data: {missing_available}")
@@ -45,15 +45,15 @@ def build_ae_h_dataset(config: AppConfig, component: str) -> pd.DataFrame:
     if missing_prepared:
         raise KeyError(f"Required columns are missing in prepared_data: {missing_prepared}")
 
-    ae_frame = available_data.loc[:, required_available_columns].copy()
-    ae_frame["Time"] = _to_utc_naive(ae_frame["Time"])
-    ae_frame = ae_frame.dropna(subset=["Time"]).drop_duplicates(subset=["Time"])
+    symh_frame = available_data.loc[:, required_available_columns].copy()
+    symh_frame["Time"] = _to_utc_naive(symh_frame["Time"])
+    symh_frame = symh_frame.dropna(subset=["Time"]).drop_duplicates(subset=["Time"])
 
     h_frame = prepared_data.loc[:, required_prepared_columns].copy()
     h_frame["Time"] = _to_utc_naive(h_frame["Time"])
     h_frame = h_frame.dropna(subset=["Time"]).drop_duplicates(subset=["Time"])
 
-    merged = ae_frame.merge(h_frame, on="Time", how="inner").sort_values("Time").reset_index(drop=True)
+    merged = symh_frame.merge(h_frame, on="Time", how="inner").sort_values("Time").reset_index(drop=True)
     if merged.empty:
         raise ValueError("No common timestamps found between available_data and prepared_data.")
     return merged
@@ -77,7 +77,7 @@ def show_plot(
     show: bool = True,
 ) -> Path:
     resolver = paths(config)
-    ae_h_data = build_ae_h_dataset(config, component=component)
+    symh_h_data = build_symh_h_dataset(config, component=component)
 
     output_path = None
     if save_image:
@@ -90,10 +90,10 @@ def show_plot(
             + ("_log" if log_scale else "")
             + ("_log_y" if y_log_scale else "")
         )
-        output_path = resolver.image(f"hist_ae_inside_H_{normalized_component}_{lower_part}_{upper_part}{suffix}")
+        output_path = resolver.image(f"hist_symh_inside_H_{normalized_component}_{lower_part}_{upper_part}{suffix}")
 
-    return plot_ae_histogram_inside_h_range(
-        data=ae_h_data,
+    return plot_symh_histogram_inside_h_range(
+        data=symh_h_data,
         component=component,
         h_range=h_range,
         bins=bins,

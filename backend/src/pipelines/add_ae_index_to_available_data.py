@@ -1,23 +1,19 @@
-from pathlib import Path
-
 from backend.src.config import get_config, get_logger
-from backend.src.io.parquet import data_file_path
+from backend.src.io.paths import EventDataset, KyotoIndex, paths
 from backend.src.processing.interpolation import add_ae_index_to_available_data
 
 logger = get_logger()
 config = get_config()
+resolver = paths(config)
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-KYOTO_AE_PATH = PROJECT_ROOT / "backend" / "data" / "kyoto" / "ae_index" / "ae.parquet"
-AVAILABLE_DATASET_STEM = "available_data"
-available_data_path = data_file_path(config, AVAILABLE_DATASET_STEM)
+kyoto_ae_path = resolver.kyoto.index_parquet(KyotoIndex.AE)
+available_data_path = resolver.dataset(EventDataset.AVAILABLE)
 
-
-logger.info(f"Загрузка Kyoto AE index: {KYOTO_AE_PATH}")
+logger.info(f"Загрузка Kyoto AE index: {kyoto_ae_path}")
 logger.info(f"Дополнение available_data: {available_data_path}")
 
 updated = add_ae_index_to_available_data(
-    ae_path=KYOTO_AE_PATH,
+    ae_path=kyoto_ae_path,
     available_data_path=available_data_path,
 )
 

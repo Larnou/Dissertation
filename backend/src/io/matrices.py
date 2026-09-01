@@ -4,34 +4,43 @@ import numpy as np
 import pandas as pd
 
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import PathResolver
+from backend.src.io.paths import Reducer, paths
 from backend.src.processing.distribution import DistributionBuckets
 
 
-def save_distribution_matrix(config: AppConfig, matrix: np.ndarray, parameter_name: str, reducer: str) -> Path:
+def save_distribution_matrix(
+    config: AppConfig,
+    matrix: np.ndarray,
+    parameter_key: str,
+    reducer: Reducer | str,
+) -> Path:
     """
-    Сохраняет одну матрицу распределения в CSV в каталоге matrices.
+    Сохраняет одну матрицу распределения в CSV в каталоге distributions/.
     """
 
-    file_name = f"distribution_{parameter_name}_{reducer}.csv"
-    path = PathResolver(config).distribution_file(file_name)
+    resolved_reducer = Reducer(reducer) if isinstance(reducer, str) else reducer
+    path = paths(config).distribution_map_by_key(parameter_key, resolved_reducer)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     pd.DataFrame(matrix).to_csv(path, index=False)
     return path
 
 
-def save_distribution_matrices(config: AppConfig, distributions: dict[str, np.ndarray], reducer: str) -> dict[str, Path]:
+def save_distribution_matrices(
+    config: AppConfig,
+    distributions: dict[str, np.ndarray],
+    reducer: Reducer | str,
+) -> dict[str, Path]:
     """
     Сохраняет набор матриц распределений и возвращает пути к файлам.
     """
 
     saved_paths: dict[str, Path] = {}
-    for parameter_name, matrix in distributions.items():
-        saved_paths[parameter_name] = save_distribution_matrix(
+    for parameter_key, matrix in distributions.items():
+        saved_paths[parameter_key] = save_distribution_matrix(
             config=config,
             matrix=matrix,
-            parameter_name=parameter_name,
+            parameter_key=parameter_key,
             reducer=reducer,
         )
     return saved_paths
@@ -43,10 +52,10 @@ def save_raw_distribution_long(
     file_stem: str = "distribution_raw_long",
 ) -> dict[str, Path]:
     """
-    Сохраняет исходные значения распределений в long-формате в каталоге matrices.
+    Сохраняет исходные значения распределений в long-формате в каталоге matrices/.
     """
 
-    resolver = PathResolver(config)
+    resolver = paths(config)
     saved_paths: dict[str, Path] = {}
     parameter_grids = {
         "H_f": buckets.hf,
@@ -57,8 +66,8 @@ def save_raw_distribution_long(
         "G_r": buckets.gr,
     }
 
-    for parameter_name, grid in parameter_grids.items():
-        path = resolver.matrix_file(f"{file_stem}_{parameter_name}.parquet")
+    for parameter_key, grid in parameter_grids.items():
+        path = resolver.matrices_dir / f"{file_stem}_{parameter_key}.parquet"
         path.parent.mkdir(parents=True, exist_ok=True)
         rows: list[dict[str, float | int | str]] = []
         for l_index, l_row in enumerate(grid):
@@ -66,13 +75,13 @@ def save_raw_distribution_long(
                 for value in values:
                     rows.append(
                         {
-                            "parameter": parameter_name,
+                            "parameter": parameter_key,
                             "L_bin": l_index,
                             "MLT_bin": mlt_index,
                             "value": float(value),
                         }
                     )
         pd.DataFrame(rows, columns=["parameter", "L_bin", "MLT_bin", "value"]).to_parquet(path, index=False)
-        saved_paths[parameter_name] = path
+        saved_paths[parameter_key] = path
 
     return saved_paths

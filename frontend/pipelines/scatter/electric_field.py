@@ -5,7 +5,7 @@ import matplotlib
 
 from backend.src.config import get_config
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import PathResolver
+from backend.src.io.paths import EventDataset, paths
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
@@ -16,21 +16,17 @@ matplotlib.use("TkAgg", force=True)
 from frontend.plot import plot_meas_vs_conv_with_regression
 
 
-def build_prepared_data_path(config: AppConfig) -> Path:
-    return PathResolver(config).data_file("prepared_data")
-
-
 def show_plot(
     config: AppConfig,
     component: str,
     save_image: bool = False,
     show: bool = True,
 ) -> float:
-    resolver = PathResolver(config)
-    parquet_path = build_prepared_data_path(config)
+    resolver = paths(config)
+    parquet_path = resolver.dataset(EventDataset.PREPARED)
     output_path = None
     if save_image:
-        output_path = resolver.image_file(f"scatter_{component}.png")
+        output_path = resolver.image(f"scatter_{component}")
     angle = plot_meas_vs_conv_with_regression(
         parquet_path=parquet_path,
         component=component,
@@ -42,13 +38,10 @@ def show_plot(
 
 
 def main() -> None:
-    # Доступные компоненты: f, r, a
     config = get_config()
-    component = "r"
-
     show_plot(
         config=config,
-        component=component,
+        component="r",
         save_image=True,
         show=True,
     )

@@ -6,7 +6,7 @@ import pandas as pd
 
 from backend.src.config import get_config
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import PathResolver
+from backend.src.io.paths import EventDataset, paths
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
@@ -17,33 +17,22 @@ matplotlib.use("TkAgg", force=True)
 from frontend.plot import plot_j_h_count_heatmap
 
 
-def read_prepared_data(path: str | Path) -> pd.DataFrame:
-    resolved_path = Path(path).expanduser().resolve()
-    if not resolved_path.exists():
-        raise FileNotFoundError(f"Prepared dataset not found: {resolved_path}")
-    return pd.read_parquet(resolved_path)
-
-
-def build_prepared_data_path(config: AppConfig) -> Path:
-    return PathResolver(config).data_file("prepared_data")
-
-
 def show_plots(
     config: AppConfig,
     components: tuple[str, ...],
-    j_bin_step: float = 1e-10,
+    j_bin_step: float = 0.1,
     h_bin_step: float = 0.1,
     save_image: bool = False,
     show: bool = True,
 ) -> list[Path]:
-    resolver = PathResolver(config)
-    prepared_data = read_prepared_data(build_prepared_data_path(config))
+    resolver = paths(config)
+    prepared_data = pd.read_parquet(resolver.dataset(EventDataset.PREPARED))
     output_paths: list[Path] = []
 
     for component in components:
         output_path = None
         if save_image:
-            output_path = resolver.image_file(f"heatmap_jh_{component}_counts.png")
+            output_path = resolver.image(f"heatmap_jh_{component}_counts")
 
         result_path = plot_j_h_count_heatmap(
             data=prepared_data,
@@ -60,12 +49,10 @@ def show_plots(
 
 def main() -> None:
     config = get_config()
-    components = ("f", "a", "r")
-
     show_plots(
         config=config,
-        components=components,
-        j_bin_step=1e-10,
+        components=("f", "a", "r"),
+        j_bin_step=0.05,
         h_bin_step=0.05,
         save_image=True,
         show=True,

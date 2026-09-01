@@ -1,16 +1,16 @@
 from backend.src.config import get_config, get_logger
-from backend.src.io.parquet import data_file_path, read_data_from_parquet, save_data_to_parquet
+from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
+from backend.src.io.paths import EventDataset
 from backend.src.physics.ion_current_density import IonCurrentDensityModel
 
 logger = get_logger()
 config = get_config()
 
-PREPARED_DATASET_STEM = "prepared_data"
 VELOCITY_KEYS = ("V_a_meas", "V_r_meas", "V_f_meas")
 DENSITY_KEY = "density"
 
 logger.info("Загрузка prepared_data.parquet.")
-prepared = read_data_from_parquet(config, PREPARED_DATASET_STEM)
+prepared = read_data_from_parquet(config, EventDataset.PREPARED)
 if prepared.empty:
     logger.info("prepared_data пустой. Нечего дополнять.")
 else:
@@ -33,6 +33,6 @@ else:
     output = prepared.copy()
     output[["J_a", "J_r", "J_f"]] = current_density[["J_a", "J_r", "J_f"]]
 
-    save_data_to_parquet(config, output, PREPARED_DATASET_STEM)
-    logger.info(f"Готовый датасет сохранён: {data_file_path(config, PREPARED_DATASET_STEM)}")
-    logger.info(f"Добавлены колонки: {['J_a', 'J_r', 'J_f']}")
+    output_path = save_data_to_parquet(config, output, EventDataset.PREPARED)
+    logger.info(f"Готовый датасет сохранён: {output_path}")
+    logger.info("Добавлены колонки: ['J_a', 'J_r', 'J_f']")

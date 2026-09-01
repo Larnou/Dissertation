@@ -1,5 +1,4 @@
 from datetime import datetime
-from pathlib import Path
 from typing import Self, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -135,29 +134,14 @@ class HParameterConfig(BaseModel):
 
 
 class PathsConfig(BaseModel):
-    """Корневые пути для артефактов относительно корня проекта."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    data: str = Field(description="Каталог parquet-данных относительно корня репозитория.")
-    periods: str = Field(description="Каталог CSV-периодов относительно корня репозитория.")
-    matrices: str = Field(description="Каталог матриц/распределений относительно корня репозитория.")
-    images: str = Field(description="Каталог изображений относительно корня репозитория.")
-    distributions: str = Field(description="Каталог распределений параметров.")
-
-
-class ResolvedPaths(BaseModel):
     """
-    Абсолютные пути после привязки к корню проекта.
+    Корневые каталоги данных относительно корня репозитория.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    data: Path
-    periods: Path
-    matrices: Path
-    images: Path
-    distributions: Path
+    data_root: str = Field(description="Корень backend/data/.")
+    events: str = Field(description="Каталог событий THEMIS (backend/data/events).")
 
 
 class AppConfig(BaseModel):

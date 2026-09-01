@@ -6,7 +6,7 @@ import pandas as pd
 
 from backend.src.config import get_config
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import PathResolver
+from backend.src.io.paths import EventDataset, paths
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
@@ -15,21 +15,6 @@ if str(PROJECT_ROOT) not in sys.path:
 matplotlib.use("TkAgg", force=True)
 
 from frontend.plot import plot_beta_h_count_heatmap
-
-
-def read_dataset(path: str | Path, *, dataset_name: str) -> pd.DataFrame:
-    resolved_path = Path(path).expanduser().resolve()
-    if not resolved_path.exists():
-        raise FileNotFoundError(f"{dataset_name} dataset not found: {resolved_path}")
-    return pd.read_parquet(resolved_path)
-
-
-def build_prepared_data_path(config: AppConfig) -> Path:
-    return PathResolver(config).data_file("prepared_data")
-
-
-def build_available_data_path(config: AppConfig) -> Path:
-    return PathResolver(config).data_file("available_data")
 
 
 def _to_utc_naive(series: pd.Series) -> pd.Series:
@@ -41,8 +26,9 @@ def _to_utc_naive(series: pd.Series) -> pd.Series:
 
 
 def build_beta_h_dataset(config: AppConfig, h_columns: tuple[str, ...]) -> pd.DataFrame:
-    available_data = read_dataset(build_available_data_path(config), dataset_name="Available")
-    prepared_data = read_dataset(build_prepared_data_path(config), dataset_name="Prepared")
+    resolver = paths(config)
+    available_data = pd.read_parquet(resolver.dataset(EventDataset.AVAILABLE))
+    prepared_data = pd.read_parquet(resolver.dataset(EventDataset.PREPARED))
 
     beta_frame = available_data[["Time", "beta"]].copy()
     beta_frame["Time"] = _to_utc_naive(beta_frame["Time"])
@@ -75,14 +61,14 @@ def show_plots(
     save_image: bool = False,
     show: bool = True,
 ) -> list[Path]:
-    resolver = PathResolver(config)
+    resolver = paths(config)
     beta_h_data = build_beta_h_dataset(config, h_columns=h_parameters)
     output_paths: list[Path] = []
 
     for h_parameter in h_parameters:
         output_path = None
         if save_image:
-            output_path = resolver.image_file(f"heatmap_beta_{h_parameter}_counts.png")
+            output_path = resolver.image(f"heatmap_beta_{h_parameter}_counts")
 
         result_path = plot_beta_h_count_heatmap(
             data=beta_h_data,
@@ -99,11 +85,9 @@ def show_plots(
 
 def main() -> None:
     config = get_config()
-    h_parameters = ("H_f", "H_a", "H_r")
-
     show_plots(
         config=config,
-        h_parameters=h_parameters,
+        h_parameters=("H_f", "H_a", "H_r"),
         beta_bin_step=0.05,
         h_bin_step=0.05,
         save_image=True,

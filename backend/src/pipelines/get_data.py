@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from backend.src.config import get_config, get_logger
 from backend.src.io import DataDownloading
+from backend.src.io.paths import DerivedDataset, Instrument
 from backend.src.processing import AvailabilityIntervals
 from backend.src.processing.core import intersect_many, summarize_intervals
 from backend.src.processing.interpolation import get_or_interpolate_data
@@ -28,13 +29,13 @@ beta_data = loader.get_beta_data()
 availability = AvailabilityIntervals(show_progress=True)
 
 logger.info("Получение интервалов доступности:")
-ssc_intervals = availability.from_dataframe(ssc_data, "ssc")
-fgm_intervals = availability.from_dataframe(fgm_data, "fgm")
-esa_ion_intervals = availability.from_dataframe(esa_ion_data, "esa_ion")
-efi_intervals = availability.from_dataframe(efi_data, "efi")
-sta_intervals = availability.from_dataframe(sta_data, "sta")
-shue_intervals = availability.from_dataframe(shue_data, "shue")
-beta_intervals = availability.from_dataframe(beta_data, "beta")
+ssc_intervals = availability.from_dataframe(ssc_data, Instrument.SSC)
+fgm_intervals = availability.from_dataframe(fgm_data, Instrument.FGM)
+esa_ion_intervals = availability.from_dataframe(esa_ion_data, Instrument.ESA_ION)
+efi_intervals = availability.from_dataframe(efi_data, Instrument.EFI)
+sta_intervals = availability.from_dataframe(sta_data, Instrument.STA)
+shue_intervals = availability.from_dataframe(shue_data, DerivedDataset.SHUE)
+beta_intervals = availability.from_dataframe(beta_data, DerivedDataset.BETA)
 
 
 # Intersections

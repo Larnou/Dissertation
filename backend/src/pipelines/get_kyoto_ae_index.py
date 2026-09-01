@@ -1,25 +1,23 @@
-import logging
-from pathlib import Path
-
+from backend.src.config import get_config, get_logger
 from backend.src.io.kyoto_ae import read_kyoto_ae_directory, save_kyoto_ae_to_parquet
+from backend.src.io.paths import KyotoIndex, paths
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
-logger = logging.getLogger(__name__)
+logger = get_logger()
+config = get_config()
+resolver = paths(config)
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-KYOTO_AE_INPUT_DIR = PROJECT_ROOT / "backend" / "data" / "kyoto" / "ae_index"
-KYOTO_AE_OUTPUT_PATH = KYOTO_AE_INPUT_DIR / "ae.parquet"
+kyoto_ae_input_dir = resolver.kyoto.source_dir(KyotoIndex.AE)
+kyoto_ae_output_path = resolver.kyoto.index_parquet(KyotoIndex.AE)
 
+logger.info(f"Чтение Kyoto AE index из {kyoto_ae_input_dir}")
+ae_data = read_kyoto_ae_directory(kyoto_ae_input_dir)
 
-logger.info(f"Чтение Kyoto AE index из {KYOTO_AE_INPUT_DIR}")
-ae_data = read_kyoto_ae_directory(KYOTO_AE_INPUT_DIR)
-
-save_kyoto_ae_to_parquet(ae_data, KYOTO_AE_OUTPUT_PATH)
+save_kyoto_ae_to_parquet(ae_data, kyoto_ae_output_path)
 
 if ae_data.empty:
-    logger.info(f"Kyoto AE index пустой. Файл сохранён: {KYOTO_AE_OUTPUT_PATH}")
+    logger.info(f"Kyoto AE index пустой. Файл сохранён: {kyoto_ae_output_path}")
 else:
-    logger.info(f"Сохранён Kyoto AE index: {KYOTO_AE_OUTPUT_PATH}")
+    logger.info(f"Сохранён Kyoto AE index: {kyoto_ae_output_path}")
     logger.info(f"Количество строк: {len(ae_data)}")
     logger.info(f"Диапазон Time: {ae_data['Time'].min()} — {ae_data['Time'].max()}")
     logger.info(f"Колонки: {list(ae_data.columns)}")

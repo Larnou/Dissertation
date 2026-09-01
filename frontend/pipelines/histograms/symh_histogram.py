@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 
 import matplotlib
+import pandas as pd
 
 from backend.src.config import get_config
 from backend.src.config.schemas import AppConfig
@@ -13,21 +14,27 @@ if str(PROJECT_ROOT) not in sys.path:
 
 matplotlib.use("TkAgg", force=True)
 
-from frontend.plot import plot_h_vs_g_components_scatter
+from frontend.plot import plot_symh_histogram
 
 
 def show_plot(
     config: AppConfig,
+    bins: int = 40,
+    smooth_window: int = 5,
     save_image: bool = False,
     show: bool = True,
 ) -> Path:
     resolver = paths(config)
-    parquet_path = resolver.dataset(EventDataset.PREPARED)
+    available_data = pd.read_parquet(resolver.dataset(EventDataset.AVAILABLE))
+
     output_path = None
     if save_image:
-        output_path = resolver.image("scatter_h_vs_g_components")
-    return plot_h_vs_g_components_scatter(
-        parquet_path=parquet_path,
+        output_path = resolver.image("hist_symh_index")
+
+    return plot_symh_histogram(
+        data=available_data,
+        bins=bins,
+        smooth_window=smooth_window,
         output_path=output_path,
         show=show,
     )
@@ -35,7 +42,13 @@ def show_plot(
 
 def main() -> None:
     config = get_config()
-    show_plot(config=config, save_image=True, show=True)
+    show_plot(
+        config=config,
+        bins=40,
+        smooth_window=5,
+        save_image=True,
+        show=True,
+    )
 
 
 if __name__ == "__main__":

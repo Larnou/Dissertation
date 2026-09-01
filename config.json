@@ -19,10 +19,7 @@
     "noise_vb": 0.1
   },
   "paths": {
-    "data": "backend/data/events",
-    "periods": "backend/data/events",
-    "matrices": "backend/data/events",
-    "images": "backend/data/events",
-    "distributions": "backend/data/events"
+    "data_root": "backend/data",
+    "events": "backend/data/events"
   }
 }

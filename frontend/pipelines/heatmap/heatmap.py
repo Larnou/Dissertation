@@ -6,7 +6,7 @@ import pandas as pd
 
 from backend.src.config import get_config
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import PathResolver
+from backend.src.io.paths import EventDataset, paths
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
@@ -17,17 +17,6 @@ matplotlib.use("TkAgg", force=True)
 from frontend.plot import plot_beta_heatmap
 
 
-def read_prepared_data(path: str | Path) -> pd.DataFrame:
-    resolved_path = Path(path).expanduser().resolve()
-    if not resolved_path.exists():
-        raise FileNotFoundError(f"Prepared dataset not found: {resolved_path}")
-    return pd.read_parquet(resolved_path)
-
-
-def build_prepared_data_path(config: AppConfig) -> Path:
-    return PathResolver(config).data_file("available_data")
-
-
 def show_plot(
     config: AppConfig,
     lfrom: int,
@@ -35,16 +24,15 @@ def show_plot(
     save_image: bool = False,
     show: bool = True,
 ) -> Path:
-    resolver = PathResolver(config)
-    prepared_data_path = build_prepared_data_path(config)
-    prepared_data = read_prepared_data(prepared_data_path)
+    resolver = paths(config)
+    available_data = pd.read_parquet(resolver.dataset(EventDataset.AVAILABLE))
 
     output_path = None
     if save_image:
-        output_path = resolver.image_file(f"heatmap_beta_l{lfrom}-l{lto}.png")
+        output_path = resolver.image(f"heatmap_beta_l{lfrom}-l{lto}")
 
     return plot_beta_heatmap(
-        data=prepared_data,
+        data=available_data,
         lfrom=lfrom,
         lto=lto,
         output_path=output_path,
@@ -54,13 +42,10 @@ def show_plot(
 
 def main() -> None:
     config = get_config()
-    lfrom = 4
-    lto = 8
-
     show_plot(
         config=config,
-        lfrom=lfrom,
-        lto=lto,
+        lfrom=4,
+        lto=12,
         save_image=True,
         show=True,
     )

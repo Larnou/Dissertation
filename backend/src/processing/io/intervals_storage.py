@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import PathResolver
+from backend.src.io.paths import AvailabilitySource, paths
 
 Interval = tuple[datetime, datetime]
 
@@ -31,11 +31,11 @@ def save_intervals_csv(intervals: list[Interval], output_path: str | Path) -> Pa
     return destination
 
 
-def save_source_periods(intervals: list[Interval], config: AppConfig, source_stem: str) -> Path:
-    output_path = PathResolver(config).periods_file(source_stem)
+def save_source_periods(intervals: list[Interval], config: AppConfig, source: AvailabilitySource) -> Path:
+    output_path = paths(config).availability_periods(source)
     return save_intervals_csv(intervals=intervals, output_path=output_path)
 
 
 def save_intersections_periods(intervals: list[Interval], config: AppConfig) -> Path:
-    output_path = PathResolver(config).periods_file("intersections")
+    output_path = paths(config).intersection_periods()
     return save_intervals_csv(intervals=intervals, output_path=output_path)
