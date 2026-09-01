@@ -6,22 +6,22 @@
 """
 
 from dataclasses import dataclass
-from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 
-from backend.src.config.schemas import TIME_FORMAT, AppConfig
+from backend.src.config.root import project_root
+from backend.src.config.schemas import AppConfig
 
 THEMIS_PREFIX = "THEMIS"
 KYOTO_DIRNAME = "kyoto"
 DYNAMICS_DIRNAME = "dynamics"
 DATA_DIRNAME = "data"
+EVENTS_DIRNAME = "events"
 PERIODS_DIRNAME = "periods"
 MATRICES_DIRNAME = "matrices"
 DISTRIBUTIONS_DIRNAME = "distributions"
 IMAGES_DIRNAME = "images"
 INTERSECTIONS_STEM = "intersections"
-_ROOT_MARKERS = ("pyproject.toml", "config.json")
 
 
 class Instrument(StrEnum):
@@ -98,34 +98,6 @@ class Reducer(StrEnum):
     MEDIAN = "median"
     Q25 = "q25"
     Q75 = "q75"
-
-
-def project_root(start: Path | None = None) -> Path:
-    """
-    Находит корень репозитория по маркерам pyproject.toml и config.json.
-
-    Поиск идёт вверх от start. Если start не задан, начинается от этого модуля,
-    поэтому перенос клона в другую папку путь не ломает.
-
-    Args:
-        start: файл или каталог, от которого идти вверх. По умолчанию — этот модуль.
-
-    Returns:
-        Абсолютный путь корня репозитория.
-
-    Raises:
-        FileNotFoundError: ни один маркер не найден выше start.
-    """
-
-    current = (start or Path(__file__)).resolve()
-    if current.is_file():
-        current = current.parent
-
-    for candidate in (current, *current.parents):
-        if any((candidate / marker).is_file() for marker in _ROOT_MARKERS):
-            return candidate
-
-    raise FileNotFoundError(f"Project root not found (missing pyproject.toml/config.json), start={current}")
 
 
 def paths(config: AppConfig | None = None, *, root: Path | None = None) -> "PathResolver":
@@ -245,10 +217,10 @@ class PathResolver:
     @property
     def events_root_dir(self) -> Path:
         """
-        Каталог событий THEMIS из конфига, обычно backend/data/events/.
+        Каталог событий THEMIS: {data_root}/events/.
         """
 
-        return (self.project_root / self.config.paths.events).resolve()
+        return (self.data_root_dir / EVENTS_DIRNAME).resolve()
 
     @property
     def event_id(self) -> str:
@@ -256,8 +228,8 @@ class PathResolver:
         Идентификатор события YYYY-MM-DD_YYYY-MM-DD по reading.time_start и time_end.
         """
 
-        start = datetime.strptime(self.config.reading.time_start, TIME_FORMAT)
-        end = datetime.strptime(self.config.reading.time_end, TIME_FORMAT)
+        start = self.config.reading.time_start
+        end = self.config.reading.time_end
         return f"{start.strftime('%Y-%m-%d')}_{end.strftime('%Y-%m-%d')}"
 
     @property

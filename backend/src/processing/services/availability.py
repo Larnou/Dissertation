@@ -4,8 +4,8 @@ from datetime import timedelta
 import numpy as np
 import pandas as pd
 
-from backend.src.config import progress_bar
 from backend.src.config.schemas import AppConfig
+from backend.src.log import progress_bar
 from backend.src.processing.io.intervals_storage import save_source_periods
 from backend.src.processing.utils.intervals_view import (
     RULES,

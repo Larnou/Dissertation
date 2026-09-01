@@ -1,8 +1,9 @@
-import numpy as np
-import pandas as pd
 from datetime import timedelta
 
-from backend.src.config import AppConfig
+import numpy as np
+import pandas as pd
+
+from backend.src.config import HParameterConfig, WindowFilterConfig
 
 _B_NORM_EPS = 1e-12
 _ECONV_SCALE = 1000.0  # (km/s)·nT → mV/m
@@ -16,32 +17,25 @@ class FAHCalculator:
     f ‖ B_trend, a ⊥ B_trend в плоскости (r × B), r = f × a.
     """
 
-    def __init__(self, dataframe: pd.DataFrame, parameters: AppConfig):
+    def __init__(
+        self,
+        dataframe: pd.DataFrame,
+        *,
+        window_filter: WindowFilterConfig,
+        h_parameter: HParameterConfig,
+    ):
         """
-        :param dataframe: Time, GSM_X/Y/Z [km], GSM_B* [nT], GSM_E* [mV/m], GSM_Vi* [km/s].
-        :param parameters: AppConfig с секциями window_filter и h_parameter.
+        Args:
+            dataframe: Time, GSM_X/Y/Z [km], GSM_B* [nT], GSM_E* [mV/м], GSM_Vi* [km/s].
+            window_filter: окно тренда B берётся из high_pass (секунды).
+            h_parameter: пороги шума E и −V×B [мВ/м].
         """
 
         self.data = dataframe
-        self.window_sec = self._extract_window_sec(parameters)
-        self.noise_e, self.noise_vb = self._extract_noise_levels(parameters)
+        self.window_sec = int(window_filter.high_pass)
+        self.noise_e = float(h_parameter.noise_e)
+        self.noise_vb = float(h_parameter.noise_vb)
         self.time_key = "Time"
-
-    @staticmethod
-    def _extract_window_sec(parameters) -> int:
-        """
-        Длительность окна тренда B [с]: window_filter.high_pass.
-        """
-
-        return int(parameters.window_filter.high_pass)
-
-    @staticmethod
-    def _extract_noise_levels(parameters) -> tuple[float, float]:
-        """
-        Пороги шума E и −V×B [mV/m] из h_parameter.
-        """
-
-        return float(parameters.h_parameter.noise_e), float(parameters.h_parameter.noise_vb)
 
     @staticmethod
     def vector_length(comp_list):

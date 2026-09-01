@@ -1,6 +1,7 @@
-from backend.src.config import get_config, get_logger
+from backend.src.config import get_config
 from backend.src.io.kyoto_ae import read_kyoto_ae_directory, save_kyoto_ae_to_parquet
 from backend.src.io.paths import KyotoIndex, paths
+from backend.src.log import get_logger
 
 logger = get_logger()
 config = get_config()

@@ -1,9 +1,9 @@
 import pandas as pd
 
 from backend.src.config import AppConfig
-from backend.src.config import get_logger
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
 from backend.src.io.paths import EventDataset
+from backend.src.log import get_logger
 from backend.src.processing.interpolation.df_interpolator import DFInterpolator
 from backend.src.processing.services.filter_by_min_duration import filter_datasets_by_min_duration
 

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from backend.src.config import get_logger, progress_bar
+from backend.src.log import get_logger, progress_bar
 
 logger = get_logger()
 

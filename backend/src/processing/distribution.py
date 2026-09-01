@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Literal
 import numpy as np
 import pandas as pd
 
-from backend.src.config import AppConfig, progress_bar
+from backend.src.log import progress_bar
 
 Reducer = Literal["mean", "std", "median", "q25", "q75"]
 Grid = list[list[list[float]]]
@@ -27,7 +27,6 @@ class DistributionBuckets:
 
 @dataclass(frozen=True, slots=True)
 class Distributions:
-    config: AppConfig
     lshell_range: int = 16
     radian_range: int = 24
     REQUIRED_COLUMNS: tuple[str, ...] = (

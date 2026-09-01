@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from backend.src.config import progress_bar
 from backend.src.config.schemas import AppConfig
 from backend.src.io.cdaweb import CDAweb
 from backend.src.io.utils.format_time_borders import format_time_borders
+from backend.src.log import progress_bar
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +25,7 @@ class RawData:
     config: AppConfig
 
     def get_borders(self) -> list[dict[str, str]]:
-        return format_time_borders(self.config)
+        return format_time_borders(self.config.reading)
 
 
     def get_satellite_letters(self):

@@ -1,6 +1,7 @@
-from backend.src.config import get_config, get_logger
+from backend.src.config import get_config
 from backend.src.io.parquet import read_data_from_parquet, save_data_to_parquet
 from backend.src.io.paths import EventDataset
+from backend.src.log import get_logger
 from backend.src.physics.ion_current_density import IonCurrentDensityModel
 
 logger = get_logger()

@@ -1,7 +1,8 @@
 from datetime import timedelta
 
 import pandas as pd
-from backend.src.config import get_logger, progress_bar, AppConfig
+
+from backend.src.log import get_logger
 
 logger = get_logger()
 

@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from cdasws import CdasWs
-from backend.src.config import get_logger
+
+from backend.src.log import get_logger
 
 logger = get_logger()
 

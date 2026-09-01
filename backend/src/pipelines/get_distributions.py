@@ -1,7 +1,8 @@
-from backend.src.config import get_config, get_logger
+from backend.src.config import get_config
 from backend.src.io.matrices import save_distribution_matrices, save_raw_distribution_long
 from backend.src.io.parquet import read_data_from_parquet
 from backend.src.io.paths import EventDataset, Reducer
+from backend.src.log import get_logger
 from backend.src.processing.distribution import Distributions
 
 logger = get_logger()
@@ -15,7 +16,7 @@ prepared_datasets = read_data_from_parquet(
 )
 logger.info(f"Загружено датасетов: {len(prepared_datasets)}")
 
-distribution_calculator = Distributions(config)
+distribution_calculator = Distributions()
 param_distr = distribution_calculator.collect(prepared_datasets)
 raw_long_paths = save_raw_distribution_long(config, param_distr)
 for parameter_name, raw_long_path in raw_long_paths.items():

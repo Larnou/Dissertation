@@ -1,8 +1,9 @@
 from datetime import timedelta
 
-from backend.src.config import get_config, get_logger
+from backend.src.config import get_config
 from backend.src.io import DataDownloading
 from backend.src.io.paths import DerivedDataset, Instrument
+from backend.src.log import get_logger
 from backend.src.processing import AvailabilityIntervals
 from backend.src.processing.core import intersect_many, summarize_intervals
 from backend.src.processing.interpolation import get_or_interpolate_data
@@ -26,7 +27,7 @@ beta_data = loader.get_beta_data()
 
 
 # Доступность данных
-availability = AvailabilityIntervals(show_progress=True)
+availability = AvailabilityIntervals(config, show_progress=True)
 
 logger.info("Получение интервалов доступности:")
 ssc_intervals = availability.from_dataframe(ssc_data, Instrument.SSC)

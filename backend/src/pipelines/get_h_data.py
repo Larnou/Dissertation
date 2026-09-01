@@ -1,8 +1,9 @@
 import pandas as pd
 
-from backend.src.config import get_config, get_logger
+from backend.src.config import get_config
 from backend.src.io.parquet import save_data_to_parquet
 from backend.src.io.paths import EventDataset
+from backend.src.log import get_logger
 from backend.src.physics.ion_current_density import IonCurrentDensityModel
 from backend.src.processing import build_prepared_datasets
 from backend.src.processing.interpolation import get_or_interpolate_data

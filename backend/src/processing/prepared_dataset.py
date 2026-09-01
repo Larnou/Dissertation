@@ -4,10 +4,10 @@ from collections.abc import Iterable
 
 import pandas as pd
 
-from backend.src.config import AppConfig, progress_bar
+from backend.src.config import AppConfig
+from backend.src.log import progress_bar
 from backend.src.physics.field_alligned_h import FAHCalculator
 from backend.src.processing.filters import DataFiltration
-
 
 FA_COLUMNS: tuple[str, ...] = (
     "Time",
@@ -72,11 +72,15 @@ def build_prepared_dataset(
     if dataset.empty:
         return dataset.copy()
 
-    filtered = DataFiltration(config).window_filter(dataset)
+    filtered = DataFiltration(config.window_filter).window_filter(dataset)
     if filtered.empty:
         return filtered
 
-    calculator = FAHCalculator(filtered.reset_index(drop=True), config)
+    calculator = FAHCalculator(
+        filtered.reset_index(drop=True),
+        window_filter=config.window_filter,
+        h_parameter=config.h_parameter,
+    )
     fa_data = calculator.calculate_h_fa_noise() if use_noise else calculator.calculate_h_fa()
     if fa_data.empty:
         return filtered.iloc[0:0].copy()

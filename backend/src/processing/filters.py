@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from backend.src.config import AppConfig
+from backend.src.config import WindowFilterConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -11,12 +11,12 @@ class DataFiltration:
     """
     Двухступенчатая фильтрация E/V через скользящие средние.
 
-    В `AppConfig.window_filter` поля — длительности периода колебаний в секундах:
+    В `WindowFilterConfig` поля — длительности периода колебаний в секундах:
     `low_pass` — длинный период (широкое окно, первая ветвь: вычитание сглаженного),
     `high_pass` — короткий период (узкое окно, вторая ветвь: сглаживание остатка).
     """
 
-    config: AppConfig
+    config: WindowFilterConfig
 
     FILTER_COLUMNS: tuple[str, ...] = (
         "GSM_Ex",
@@ -86,8 +86,8 @@ class DataFiltration:
         if pd.isna(step_seconds) or step_seconds <= 0:
             step_seconds = 1.0
 
-        period_long_sec = float(self.config.window_filter.low_pass)
-        period_short_sec = float(self.config.window_filter.high_pass)
+        period_long_sec = float(self.config.low_pass)
+        period_short_sec = float(self.config.high_pass)
 
         wide_window = self._ensure_odd(int((period_long_sec * (1 + self.WIDTH_MODIFIER)) / step_seconds))
         narrow_window = self._ensure_odd(int((period_short_sec * (1 - self.WIDTH_MODIFIER)) / step_seconds))

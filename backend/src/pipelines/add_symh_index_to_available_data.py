@@ -1,5 +1,6 @@
-from backend.src.config import get_config, get_logger
+from backend.src.config import get_config
 from backend.src.io.paths import EventDataset, KyotoIndex, paths
+from backend.src.log import get_logger
 from backend.src.processing.interpolation import add_symh_index_to_available_data
 
 logger = get_logger()

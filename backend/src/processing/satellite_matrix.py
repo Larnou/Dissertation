@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 import pandas as pd
-from backend.src.config import progress_bar
+from backend.src.log import progress_bar
 
 
 class SatelliteMatrix:

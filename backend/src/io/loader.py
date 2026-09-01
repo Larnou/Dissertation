@@ -14,7 +14,7 @@ from backend.src.processing.services.build_beta_dataset import build_beta_datase
 from backend.src.processing.services.build_shue_dataset import build_shue_dataset
 
 
-@dataclass(init=False)
+@dataclass(frozen=True, slots=True)
 class KyotoLoading:
     """
     Загрузка минутных индексов AE из Kyoto WDC.
@@ -25,10 +25,6 @@ class KyotoLoading:
 
     config: AppConfig
     load_from_request: bool
-
-    def __init__(self, parameters: AppConfig, load_from_request: bool) -> None:
-        self.config = AppConfig.model_validate(dict(parameters))
-        self.load_from_request = load_from_request
 
     def read_from_disk(self, index: KyotoIndex = KyotoIndex.AE) -> pd.DataFrame:
         return read_kyoto_index(self.config, index)
@@ -45,7 +41,7 @@ class KyotoLoading:
         return self.read_from_disk(index)
 
 
-@dataclass(init=False)
+@dataclass(frozen=True, slots=True)
 class DataDownloading:
     """
     Загрузка датасетов THEMIS/OMNI.
@@ -59,10 +55,6 @@ class DataDownloading:
 
     config: AppConfig
     load_from_cdaweb: bool
-
-    def __init__(self, parameters: AppConfig, load_from_cdaweb: bool) -> None:
-        self.config = AppConfig.model_validate(dict(parameters))
-        self.load_from_cdaweb = load_from_cdaweb
 
     def read_from_disk(self, source: Instrument | DerivedDataset) -> pd.DataFrame:
         """
