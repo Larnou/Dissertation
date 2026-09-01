@@ -3,26 +3,18 @@ from pathlib import Path
 import pandas as pd
 
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import (
-    EventDataSource,
-    EventDataset,
-    KyotoIndex,
-    paths,
-)
+from backend.src.io.paths import KyotoIndex, paths
 
 
 def event_parquet_path(
     config: AppConfig,
-    source: EventDataSource,
+    source: str,
 ) -> Path:
     """
     Абсолютный путь к parquet-файлу в каталоге data/ события.
     """
 
-    resolver = paths(config)
-    if isinstance(source, EventDataset):
-        return resolver.dataset(source)
-    return resolver.instrument(source)
+    return paths(config).dataset(source)
 
 
 def split_dataframe_by_time_gaps(dataframe: pd.DataFrame, time_column: str = "Time", gap_seconds: int = 12) -> list[pd.DataFrame]:
@@ -44,7 +36,7 @@ def split_dataframe_by_time_gaps(dataframe: pd.DataFrame, time_column: str = "Ti
 
 def read_data_from_parquet(
     config: AppConfig,
-    source: EventDataSource,
+    source: str,
     *,
     read_as_list: bool = False,
 ) -> pd.DataFrame | list[pd.DataFrame]:
@@ -64,7 +56,7 @@ def read_data_from_parquet(
 def save_data_to_parquet(
     config: AppConfig,
     dataframe: pd.DataFrame,
-    source: EventDataSource,
+    source: str,
 ) -> Path:
     """
     Сохраняет DataFrame в parquet под backend/data/events/.../data/.

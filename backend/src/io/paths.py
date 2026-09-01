@@ -1,11 +1,16 @@
-import re
+"""
+Правила имён файлов и каталогов данных.
+
+Событие и спутник читаются из конфига. Методам достаточно того,
+что отличает файл: датасет, индекс, параметр распределения.
+"""
+
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from functools import cached_property
 from pathlib import Path
 
-from backend.src.config.schemas import AppConfig, TIME_FORMAT
+from backend.src.config.schemas import TIME_FORMAT, AppConfig
 
 THEMIS_PREFIX = "THEMIS"
 KYOTO_DIRNAME = "kyoto"
@@ -16,11 +21,12 @@ MATRICES_DIRNAME = "matrices"
 DISTRIBUTIONS_DIRNAME = "distributions"
 IMAGES_DIRNAME = "images"
 INTERSECTIONS_STEM = "intersections"
+_ROOT_MARKERS = ("pyproject.toml", "config.json")
 
 
 class Instrument(StrEnum):
     """
-    Сырые parquet-инструменты THEMIS/OMNI в .../data/.
+    Стем parquet сырого инструмента THEMIS/OMNI в каталоге data/ события.
     """
 
     EFI = "efi"
@@ -35,7 +41,7 @@ class Instrument(StrEnum):
 
 class DerivedDataset(StrEnum):
     """
-    Производные датасеты события, считаемые в processing.
+    Стем производного parquet события (модель Shue, β), который считается в processing.
     """
 
     SHUE = "shue"
@@ -44,7 +50,7 @@ class DerivedDataset(StrEnum):
 
 class EventDataset(StrEnum):
     """
-    Итоговые parquet события после интерполяции и подготовки H/G.
+    Стем итогового parquet события после интерполяции и подготовки H/G.
     """
 
     AVAILABLE = "available_data"
@@ -53,7 +59,9 @@ class EventDataset(StrEnum):
 
 class KyotoIndex(StrEnum):
     """
-    Индексы Kyoto WDC; хранятся в backend/data/kyoto/, без привязки к событию.
+    Индекс Kyoto WDC.
+
+    Каталог — backend/data/kyoto/{имя}_index/, parquet — {имя}.parquet.
     """
 
     AE = "ae"
@@ -62,7 +70,7 @@ class KyotoIndex(StrEnum):
 
 class DistributionParameter(StrEnum):
     """
-    Параметры полярных распределений на сетке L–MLT.
+    Величина полярного распределения на сетке L-MLT; входит в имя файла.
     """
 
     H = "H"
@@ -73,7 +81,7 @@ class DistributionParameter(StrEnum):
 
 class Component(StrEnum):
     """
-    Компоненты field-aligned базиса (f, a, r).
+    Ось field-aligned базиса: f — вдоль поля, a — азимутальная, r — радиальная.
     """
 
     F = "f"
@@ -83,7 +91,7 @@ class Component(StrEnum):
 
 class Reducer(StrEnum):
     """
-    Редукторы при агрегации значений в ячейках распределения.
+    Способ агрегации значений в ячейке распределения L-MLT.
     """
 
     MEAN = "mean"
@@ -92,31 +100,44 @@ class Reducer(StrEnum):
     Q75 = "q75"
 
 
-AvailabilitySource = Instrument | DerivedDataset
-EventDataSource = Instrument | DerivedDataset | EventDataset
+def project_root(start: Path | None = None) -> Path:
+    """
+    Находит корень репозитория по маркерам pyproject.toml и config.json.
 
-_KYOTO_INDEX_DIRS: dict[KyotoIndex, str] = {
-    KyotoIndex.AE: "ae_index",
-    KyotoIndex.SYMH: "sym_index",
-}
+    Поиск идёт вверх от start. Если start не задан, начинается от этого модуля,
+    поэтому перенос клона в другую папку путь не ломает.
 
+    Args:
+        start: файл или каталог, от которого идти вверх. По умолчанию — этот модуль.
 
-def _project_root() -> Path:
-    return Path(__file__).resolve().parents[3]
+    Returns:
+        Абсолютный путь корня репозитория.
 
+    Raises:
+        FileNotFoundError: ни один маркер не найден выше start.
+    """
 
-def _safe_name(name: str, value: str, suffix: str | None = None) -> str:
-    normalized = value.strip()
-    if suffix and normalized.endswith(suffix):
-        normalized = normalized[: -len(suffix)]
-    if not normalized or re.search(r"[\\/]", normalized):
-        raise ValueError(f"Invalid {name}: {value!r}")
-    return normalized
+    current = (start or Path(__file__)).resolve()
+    if current.is_file():
+        current = current.parent
+
+    for candidate in (current, *current.parents):
+        if any((candidate / marker).is_file() for marker in _ROOT_MARKERS):
+            return candidate
+
+    raise FileNotFoundError(f"Project root not found (missing pyproject.toml/config.json), start={current}")
 
 
 def paths(config: AppConfig | None = None, *, root: Path | None = None) -> "PathResolver":
     """
-    Единая точка входа для построения путей backend и frontend.
+    Собирает резолвер путей для текущего события и спутника.
+
+    Args:
+        config: параметры reading и каталогов данных. Если не передан, берётся из get_config().
+        root: явный корень репозитория. Если не задан, определяется через project_root().
+
+    Returns:
+        Объект, в котором событие и спутник уже взяты из конфига.
     """
 
     if config is None:
@@ -129,203 +150,219 @@ def paths(config: AppConfig | None = None, *, root: Path | None = None) -> "Path
 @dataclass(frozen=True, slots=True)
 class KyotoPaths:
     """
-    Пути Kyoto WDC: индексы AE/SYMH и сырые файлы в backend/data/kyoto/.
+    Пути индексов Kyoto WDC вне дерева события: backend/data/kyoto/{индекс}_index/.
     """
 
     _resolver: "PathResolver"
 
     def root_dir(self) -> Path:
         """
-        Корень каталога Kyoto: backend/data/kyoto/.
+        Корень каталогов Kyoto: backend/data/kyoto/.
         """
 
         return (self._resolver.data_root_dir / KYOTO_DIRNAME).resolve()
 
     def index_dir(self, index: KyotoIndex) -> Path:
         """
-        Каталог индекса, например backend/data/kyoto/ae_index/.
+        Каталог индекса: backend/data/kyoto/{index}_index/.
+
+        Args:
+            index: AE или SYM-H; в имя каталога подставляется значение enum.
         """
 
-        return (self.root_dir() / _KYOTO_INDEX_DIRS[index]).resolve()
+        return (self.root_dir() / f"{index}_index").resolve()
 
     def index_parquet(self, index: KyotoIndex) -> Path:
         """
-        Готовый parquet индекса, например .../ae_index/ae.parquet.
+        Готовый parquet индекса: .../{index}_index/{index}.parquet.
+
+        Args:
+            index: AE или SYM-H.
         """
 
-        return (self.index_dir(index) / f"{index.value}.parquet").resolve()
+        return (self.index_dir(index) / f"{index}.parquet").resolve()
 
     def source_dir(self, index: KyotoIndex) -> Path:
         """
-        Каталог сырых файлов Kyoto (.for.request, .txt) для индекса.
+        Каталог исходников индекса. Это тот же каталог, где лежит parquet.
+
+        Args:
+            index: AE или SYM-H.
         """
 
         return self.index_dir(index)
 
     def dynamics_dir(self) -> Path:
         """
-        Каталог PNG-графиков динамики индексов Kyoto.
+        Каталог PNG динамики индексов: backend/data/kyoto/dynamics/.
         """
 
         return (self.root_dir() / DYNAMICS_DIRNAME).resolve()
 
     def dynamics_file(self, file_name: str) -> Path:
         """
-        PNG-файл в backend/data/kyoto/dynamics/.
+        PNG-файл в каталоге динамики индексов.
+
+        Args:
+            file_name: имя файла, включая расширение.
         """
 
-        safe_name = _safe_name("kyoto dynamics file name", file_name)
-        return (self.dynamics_dir() / safe_name).resolve()
+        return (self.dynamics_dir() / file_name).resolve()
 
 
 @dataclass(frozen=True, slots=True)
 class PathResolver:
     """
-    Построение всех путей к датасетам, периодам, матрицам, распределениям и графикам.
+    Собирает пути артефактов текущего события и спутника.
+
+    Интервал и спутник читаются из конфига. Методам достаточно того,
+    что отличает файл: датасет, индекс, параметр распределения.
+
+    Attributes:
+        config: конфигурация приложения (интервал, спутник, каталоги данных).
+        root: явный корень репозитория; иначе используется project_root().
     """
 
     config: AppConfig
     root: Path | None = None
 
-    @cached_property
+    @property
     def project_root(self) -> Path:
         """
-        Абсолютный путь к корню репозитория.
+        Корень репозитория: явный root или результат project_root().
         """
 
-        return (self.root or _project_root()).resolve()
+        return (self.root or project_root()).resolve()
 
-    @cached_property
+    @property
     def data_root_dir(self) -> Path:
         """
-        Корень backend/data/.
+        Корень данных из конфига, обычно backend/data/.
         """
 
         return (self.project_root / self.config.paths.data_root).resolve()
 
-    @cached_property
+    @property
     def events_root_dir(self) -> Path:
         """
-        Корень каталога событий THEMIS.
+        Каталог событий THEMIS из конфига, обычно backend/data/events/.
         """
 
         return (self.project_root / self.config.paths.events).resolve()
 
-    @cached_property
+    @property
     def event_id(self) -> str:
         """
-        Идентификатор события в формате YYYY-MM-DD_YYYY-MM-DD.
+        Идентификатор события YYYY-MM-DD_YYYY-MM-DD по reading.time_start и time_end.
         """
 
         start = datetime.strptime(self.config.reading.time_start, TIME_FORMAT)
         end = datetime.strptime(self.config.reading.time_end, TIME_FORMAT)
         return f"{start.strftime('%Y-%m-%d')}_{end.strftime('%Y-%m-%d')}"
 
-    @cached_property
+    @property
     def satellite_id(self) -> str:
         """
-        Идентификатор спутника в формате THEMIS-X.
+        Идентификатор спутника THEMIS-X по reading.satellite.
         """
 
         return f"{THEMIS_PREFIX}-{self.config.reading.satellite.strip().upper()}"
 
-    @cached_property
+    @property
     def event_dir(self) -> Path:
         """
-        Корень артефактов события: .../events/{event_id}/THEMIS-{sat}/.
+        Корень артефактов события: .../events/{event_id}/{satellite_id}/.
         """
 
         return (self.events_root_dir / self.event_id / self.satellite_id).resolve()
 
-    @cached_property
+    @property
     def data_dir(self) -> Path:
         """
-        Parquet датасетов события: .../data/.
+        Каталог parquet датасетов события: .../data/.
         """
 
         return (self.event_dir / DATA_DIRNAME).resolve()
 
-    @cached_property
+    @property
     def periods_dir(self) -> Path:
         """
-        CSV интервалов доступности: .../periods/.
+        Каталог CSV интервалов доступности: .../periods/.
         """
 
         return (self.event_dir / PERIODS_DIRNAME).resolve()
 
-    @cached_property
+    @property
     def matrices_dir(self) -> Path:
         """
-        Long-матрицы распределений: .../matrices/.
+        Каталог long-матриц распределений: .../matrices/.
         """
 
         return (self.event_dir / MATRICES_DIRNAME).resolve()
 
-    @cached_property
+    @property
     def distributions_dir(self) -> Path:
         """
-        Сводные CSV распределений: .../distributions/.
+        Каталог сводных CSV распределений: .../distributions/.
         """
 
         return (self.event_dir / DISTRIBUTIONS_DIRNAME).resolve()
 
-    @cached_property
+    @property
     def images_dir(self) -> Path:
         """
-        PNG-графики события: .../images/.
+        Каталог PNG-графиков события: .../images/.
         """
 
         return (self.event_dir / IMAGES_DIRNAME).resolve()
 
-    @cached_property
+    @property
     def kyoto(self) -> KyotoPaths:
         """
-        Доступ к путям Kyoto WDC (вне события).
+        Пути Kyoto WDC; не привязаны к событию.
         """
 
         return KyotoPaths(self)
 
-    def instrument(self, name: Instrument | DerivedDataset) -> Path:
+    def dataset(self, name: str) -> Path:
         """
-        Parquet инструмента или производного датасета в .../data/{name}.parquet.
+        Parquet датасета события: .../data/{name}.parquet.
+
+        Args:
+            name: стем файла, например EventDataset.AVAILABLE или Instrument.FGM.
         """
 
-        stem = _safe_name("instrument", str(name), suffix=".parquet")
-        return (self.data_dir / f"{stem}.parquet").resolve()
+        return (self.data_dir / f"{name}.parquet").resolve()
 
-    def dataset(self, name: EventDataset) -> Path:
+    def availability_periods(self, source: str) -> Path:
         """
-        Parquet итогового датасета события в .../data/{name}.parquet.
-        """
+        CSV интервалов доступности: .../periods/{source}_availability_periods.csv.
 
-        stem = _safe_name("dataset", str(name), suffix=".parquet")
-        return (self.data_dir / f"{stem}.parquet").resolve()
-
-    def availability_periods(self, source: AvailabilitySource) -> Path:
-        """
-        CSV интервалов доступности источника: .../periods/{source}_availability_periods.csv.
+        Args:
+            source: стем источника, например Instrument.FGM или DerivedDataset.SHUE.
         """
 
-        stem = _safe_name("availability source", str(source))
-        return (self.periods_dir / f"{stem}_availability_periods.csv").resolve()
+        return (self.periods_dir / f"{source}_availability_periods.csv").resolve()
 
     def intersection_periods(self) -> Path:
         """
-        CSV пересечения интервалов всех источников.
+        CSV пересечения интервалов всех источников: .../periods/intersections_availability_periods.csv.
         """
 
         return (self.periods_dir / f"{INTERSECTIONS_STEM}_availability_periods.csv").resolve()
 
-    def distribution_raw_long(
-        self,
-        parameter: DistributionParameter,
-        component: Component,
-    ) -> Path:
+    def distribution_raw_long(self, parameter: DistributionParameter, component: Component) -> Path:
         """
-        Long-parquet сырых значений: .../matrices/distribution_raw_long_{P}_{c}.parquet.
+        Long-parquet сырых значений в ячейках сетки.
+
+        Имя файла: distribution_raw_long_{parameter}_{component}.parquet в matrices/.
+
+        Args:
+            parameter: величина на сетке (H, G, J, Beta).
+            component: ось field-aligned базиса.
         """
 
-        file_name = f"distribution_raw_long_{parameter.value}_{component.value}.parquet"
+        file_name = f"distribution_raw_long_{parameter}_{component}.parquet"
         return (self.matrices_dir / file_name).resolve()
 
     def distribution_map(
@@ -336,32 +373,46 @@ class PathResolver:
         component: Component | None = None,
     ) -> Path:
         """
-        CSV сводного распределения на сетке L–MLT.
+        CSV сводного распределения на сетке L-MLT.
 
-        Для H/G/J: distribution_{P}_{c}_{reducer}.csv; для Beta: distribution_Beta_{reducer}.csv.
+        Для H, G и J имя файла — distribution_{parameter}_{component}_{reducer}.csv.
+        Для Beta компонента не нужна: distribution_Beta_{reducer}.csv.
+
+        Args:
+            parameter: величина на сетке.
+            reducer: способ агрегации в ячейке.
+            component: ось базиса; обязательна для H, G и J.
+
+        Raises:
+            ValueError: для H, G или J не передана component.
         """
 
         if parameter is DistributionParameter.BETA:
-            file_name = f"distribution_{parameter.value}_{reducer.value}.csv"
+            file_name = f"distribution_{parameter}_{reducer}.csv"
         elif component is None:
-            raise ValueError(f"component is required for parameter {parameter.value}")
+            raise ValueError(f"component is required for parameter {parameter}")
         else:
-            file_name = f"distribution_{parameter.value}_{component.value}_{reducer.value}.csv"
+            file_name = f"distribution_{parameter}_{component}_{reducer}.csv"
         return (self.distributions_dir / file_name).resolve()
 
     def distribution_map_by_key(self, parameter_key: str, reducer: Reducer) -> Path:
         """
-        CSV распределения по ключу колонки (H_f, Beta, J_a и т.п.) из Distributions.build_maps.
+        CSV распределения по ключу колонки из Distributions.build_maps.
+
+        Args:
+            parameter_key: имя колонки, например H_f, Beta, J_a.
+            reducer: способ агрегации в ячейке.
         """
 
-        safe_key = _safe_name("distribution parameter key", parameter_key)
-        file_name = f"distribution_{safe_key}_{reducer.value}.csv"
-        return (self.distributions_dir / file_name).resolve()
+        return (self.distributions_dir / f"distribution_{parameter_key}_{reducer}.csv").resolve()
 
     def image(self, stem: str, *, suffix: str = ".png") -> Path:
         """
-        PNG-график события в .../images/{stem}.png.
+        PNG-график события: .../images/{stem}{suffix}.
+
+        Args:
+            stem: имя файла без расширения.
+            suffix: расширение, по умолчанию .png.
         """
 
-        safe_stem = _safe_name("image stem", stem, suffix=suffix)
-        return (self.images_dir / f"{safe_stem}{suffix}").resolve()
+        return (self.images_dir / f"{stem}{suffix}").resolve()

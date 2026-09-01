@@ -7,10 +7,9 @@ import pandas as pd
 from backend.src.config import progress_bar
 from backend.src.config.schemas import AppConfig
 from backend.src.processing.io.intervals_storage import save_source_periods
-from backend.src.io.paths import AvailabilitySource
 from backend.src.processing.utils.intervals_view import (
-    IntervalsView,
     RULES,
+    IntervalsView,
     TimeInterval,
 )
 
@@ -23,7 +22,7 @@ class AvailabilityService:
     def from_dataframe(
         self,
         dataframe: pd.DataFrame,
-        data_type: AvailabilitySource,
+        data_type: str,
         *,
         config: AppConfig | None = None,
         save_csv: bool = False,

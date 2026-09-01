@@ -1,9 +1,9 @@
 import json
-from pathlib import Path
 
 from pydantic import ValidationError
 
 from backend.src.config.schemas import AppConfig
+from backend.src.io.paths import project_root
 
 
 def load_app_config() -> AppConfig:
@@ -14,7 +14,7 @@ def load_app_config() -> AppConfig:
     (например, config.window_filter.low_pass / high_pass — длительности периодов в секундах).
     """
 
-    path = Path(__file__).resolve().parents[3] / "config.json"
+    path = project_root() / "config.json"
 
     if not path.is_file():
         msg = f"Config file not found: {path}"

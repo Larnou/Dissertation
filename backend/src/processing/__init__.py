@@ -1,18 +1,16 @@
 from backend.src.processing.availability_intervals import AvailabilityIntervals
-from backend.src.processing.services import AvailabilityService
 from backend.src.processing.prepared_dataset import build_prepared_dataset, build_prepared_datasets
+from backend.src.processing.services import AvailabilityService
 from backend.src.processing.utils.intervals_view import (
     AvailabilityRule,
-    AvailabilitySource,
     IntervalsView,
     TimeInterval,
 )
 
 __all__ = [
     "AvailabilityIntervals",
-    "AvailabilityService",
     "AvailabilityRule",
-    "AvailabilitySource",
+    "AvailabilityService",
     "IntervalsView",
     "TimeInterval",
     "build_prepared_dataset",

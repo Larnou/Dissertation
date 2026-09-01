@@ -2,8 +2,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from backend.src.io.paths import AvailabilitySource, DerivedDataset, Instrument
-
+from backend.src.io.paths import DerivedDataset, Instrument
 
 TimeInterval = tuple[pd.Timestamp, pd.Timestamp]
 
@@ -19,7 +18,7 @@ class AvailabilityRule:
     min_interval_seconds: float
 
 
-RULES: dict[AvailabilitySource, AvailabilityRule] = {
+RULES: dict[Instrument | DerivedDataset, AvailabilityRule] = {
     Instrument.FGM: AvailabilityRule("GSM_Bx", 45, 3600),
     Instrument.ESA_ION: AvailabilityRule("GSM_Vix", 45, 3600),
     Instrument.ESA_ELECTRON: AvailabilityRule("GSM_Vex", 45, 3600),

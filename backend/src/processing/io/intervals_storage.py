@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import AvailabilitySource, paths
+from backend.src.io.paths import paths
 
 Interval = tuple[datetime, datetime]
 
@@ -31,7 +31,7 @@ def save_intervals_csv(intervals: list[Interval], output_path: str | Path) -> Pa
     return destination
 
 
-def save_source_periods(intervals: list[Interval], config: AppConfig, source: AvailabilitySource) -> Path:
+def save_source_periods(intervals: list[Interval], config: AppConfig, source: str) -> Path:
     output_path = paths(config).availability_periods(source)
     return save_intervals_csv(intervals=intervals, output_path=output_path)
 
