@@ -59,18 +59,20 @@ class DFInterpolator:
 
 
     def merge_on_time_axis(self, overlap) -> pd.DataFrame:
+        """
+        Склеивает срезы по Time. Если колонка уже есть, берётся первое вхождение.
+        """
+
         sliced = self.slice_by_overlap(overlap)
         data = self.build_time_axis(sliced)
 
-        # Объединяем датафреймы к колонке со временем
-        for index, dataset in enumerate(sliced):
-            working_dataset = dataset
-            if index > 0 and "L" in working_dataset.columns:
-                # Сохраняем L только из первого датасета (ssc_data), чтобы не получать L_x/L_y.
-                working_dataset = working_dataset.drop(columns=["L"])
-            data = pd.merge(left=data, right=working_dataset, on="Time", how="left")
+        for dataset in sliced:
+            already_have = [column for column in dataset.columns if column != "Time" and column in data.columns]
+            data = pd.merge(left=data, right=dataset.drop(columns=already_have), on="Time", how="left")
 
         return data
+
+
 
 
     @staticmethod

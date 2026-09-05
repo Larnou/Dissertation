@@ -55,6 +55,6 @@ def build_beta_dataset(
         {
             "Time": merged["Time"],
             "beta": BetaModel(merged, pressure_column="Ion_pressure").model(),
-            "density": mom_sub['Ion_density'],
+            "density": merged["Ion_density"],
         }
     )
