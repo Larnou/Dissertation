@@ -6,6 +6,7 @@ from backend.src.io.paths import EventDataset
 from backend.src.log import get_logger
 from backend.src.processing.interpolation.df_interpolator import DFInterpolator
 from backend.src.processing.services.filter_by_min_duration import filter_datasets_by_min_duration
+from backend.src.processing.utils.time_gaps import split_dataframe_by_time_gaps
 
 logger = get_logger()
 
@@ -39,6 +40,6 @@ def get_or_interpolate_data(
             save_data_to_parquet(parameters, combined, dataset)
         return data
 
-    loaded = read_data_from_parquet(parameters, dataset, read_as_list=True)
+    loaded = split_dataframe_by_time_gaps(read_data_from_parquet(parameters, dataset))
     logger.info("Данные загружены с диска без доп. фильтрации по длительности.")
     return loaded

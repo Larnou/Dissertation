@@ -20,7 +20,7 @@ from backend.src.config.schemas import (
     parse_duration,
 )
 from backend.src.io.paths import PathResolver
-from backend.src.io.utils.format_time_borders import format_time_borders
+from backend.src.io.time_borders import format_time_borders
 
 
 def _payload(**overrides: object) -> dict:

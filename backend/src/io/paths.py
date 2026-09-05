@@ -6,11 +6,32 @@
 """
 
 from dataclasses import dataclass
-from enum import StrEnum
 from pathlib import Path
 
 from backend.src.config.root import project_root
 from backend.src.config.schemas import AppConfig
+from backend.src.io.names import (
+    Component,
+    DerivedDataset,
+    DistributionParameter,
+    EventDataset,
+    Instrument,
+    KyotoIndex,
+    Reducer,
+)
+
+__all__ = [
+    "Component",
+    "DerivedDataset",
+    "DistributionParameter",
+    "EventDataset",
+    "Instrument",
+    "KyotoIndex",
+    "KyotoPaths",
+    "PathResolver",
+    "Reducer",
+    "paths",
+]
 
 THEMIS_PREFIX = "THEMIS"
 KYOTO_DIRNAME = "kyoto"
@@ -24,98 +45,15 @@ IMAGES_DIRNAME = "images"
 INTERSECTIONS_STEM = "intersections"
 
 
-class Instrument(StrEnum):
-    """
-    Стем parquet сырого инструмента THEMIS/OMNI в каталоге data/ события.
-    """
-
-    EFI = "efi"
-    FGM = "fgm"
-    ESA_ION = "esa_ion"
-    ESA_ELECTRON = "esa_electron"
-    SSC = "ssc"
-    STA = "sta"
-    OMNI = "omn"
-    MOM = "mom"
-
-
-class DerivedDataset(StrEnum):
-    """
-    Стем производного parquet события (модель Shue, β), который считается в processing.
-    """
-
-    SHUE = "shue"
-    BETA = "beta"
-
-
-class EventDataset(StrEnum):
-    """
-    Стем итогового parquet события после интерполяции и подготовки H/G.
-    """
-
-    AVAILABLE = "available_data"
-    PREPARED = "prepared_data"
-
-
-class KyotoIndex(StrEnum):
-    """
-    Индекс Kyoto WDC.
-
-    Каталог — backend/data/kyoto/{имя}_index/, parquet — {имя}.parquet.
-    """
-
-    AE = "ae"
-    SYMH = "symh"
-
-
-class DistributionParameter(StrEnum):
-    """
-    Величина полярного распределения на сетке L-MLT; входит в имя файла.
-    """
-
-    H = "H"
-    G = "G"
-    J = "J"
-    BETA = "Beta"
-
-
-class Component(StrEnum):
-    """
-    Ось field-aligned базиса: f — вдоль поля, a — азимутальная, r — радиальная.
-    """
-
-    F = "f"
-    A = "a"
-    R = "r"
-
-
-class Reducer(StrEnum):
-    """
-    Способ агрегации значений в ячейке распределения L-MLT.
-    """
-
-    MEAN = "mean"
-    MEDIAN = "median"
-    Q25 = "q25"
-    Q75 = "q75"
-
-
-def paths(config: AppConfig | None = None, *, root: Path | None = None) -> "PathResolver":
+def paths(config: AppConfig, *, root: Path | None = None) -> "PathResolver":
     """
     Собирает резолвер путей для текущего события и спутника.
 
     Args:
-        config: параметры reading и каталогов данных. Если не передан, берётся из get_config().
+        config: параметры reading и каталогов данных.
         root: явный корень репозитория. Если не задан, определяется через project_root().
-
-    Returns:
-        Объект, в котором событие и спутник уже взяты из конфига.
     """
 
-    if config is None:
-        from backend.src.config import get_config
-
-        config = get_config()
     return PathResolver(config, root=root)
 
 
@@ -334,8 +272,17 @@ class PathResolver:
             component: ось field-aligned базиса.
         """
 
-        file_name = f"distribution_raw_long_{parameter}_{component}.parquet"
-        return (self.matrices_dir / file_name).resolve()
+        return self.distribution_raw_long_by_key(f"{parameter}_{component}")
+
+    def distribution_raw_long_by_key(self, parameter_key: str) -> Path:
+        """
+        Long-parquet сырых значений по ключу колонки: H_f, Beta, J_a.
+
+        Args:
+            parameter_key: имя колонки из Distributions.build_maps.
+        """
+
+        return (self.matrices_dir / f"distribution_raw_long_{parameter_key}.parquet").resolve()
 
     def distribution_map(
         self,

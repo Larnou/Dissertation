@@ -1,4 +1,7 @@
 from frontend.plot.ae_histogram import plot_ae_histogram, plot_ae_histogram_inside_h_range
+from frontend.plot.ae_kyoto import plot_ae_daily
+from frontend.plot.ae_symh_kyoto import plot_ae_symh_daily
+from frontend.plot.symh_kyoto import plot_symh_daily
 from frontend.plot.availability_periods import plot_availability_periods, read_periods, read_time_series
 from frontend.plot.dynamic import (
     plot_ae_dynamics,
@@ -24,6 +27,8 @@ from frontend.plot.symh_histogram import plot_symh_histogram, plot_symh_histogra
 
 __all__ = [
     "SatellitePlot",
+    "plot_ae_daily",
+    "plot_ae_symh_daily",
     "plot_ae_histogram",
     "plot_ae_histogram_inside_h_range",
     "plot_availability_periods",
@@ -44,6 +49,7 @@ __all__ = [
     "plot_meas_vs_conv_with_regression",
     "plot_satellite_matrix",
     "plot_shue_model",
+    "plot_symh_daily",
     "plot_symh_histogram",
     "plot_symh_histogram_inside_h_range",
     "read_periods",

@@ -6,14 +6,18 @@ import pandas as pd
 
 KYOTO_AE_LINE_TIME_PATTERN = re.compile(r"^(?P<prefix>\S+)\s+(?P<date>\d{6})E(?P<hour>\d{2})AE\b")
 KYOTO_AE_VALUES_PER_HOUR = 60
+KYOTO_AE_MISSING_VALUE = 99999
 
 
 def parse_kyoto_ae_file(path: Path) -> pd.DataFrame:
     """
-    Reads one Kyoto AE `.request` file into a minute-resolution DataFrame.
+    Читает один файл Kyoto AE (`.request`) в поминутную таблицу.
 
-    Each data line contains a YYMMDD/hour marker and 60 minute values. Kyoto
-    appends an additional summary value at the end of the line, which is ignored.
+    Берёт только строки с маркером `EhhAE`. Часовое среднее в конце строки
+    отбрасывается. Код 99999 считается пропуском.
+
+    Args:
+        path: путь к файлу в формате KYOTO/E02.
     """
 
     rows: list[dict[str, object]] = []
@@ -79,6 +83,7 @@ def _normalize_kyoto_ae_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
     result = dataframe.loc[:, ["Time", "AE"]].copy()
     result["Time"] = pd.to_datetime(result["Time"])
     result["AE"] = pd.to_numeric(result["AE"], errors="coerce")
+    result.loc[result["AE"] == KYOTO_AE_MISSING_VALUE, "AE"] = pd.NA
     result = result.dropna(subset=["Time", "AE"])
     result = result.drop_duplicates(subset=["Time"])
     result = result.sort_values("Time").reset_index(drop=True)

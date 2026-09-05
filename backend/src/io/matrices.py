@@ -1,11 +1,12 @@
+from collections.abc import Mapping
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from backend.src.config.schemas import AppConfig
-from backend.src.io.paths import Reducer, paths
-from backend.src.processing.distribution import DistributionBuckets
+from backend.src.io.names import Reducer
+from backend.src.io.paths import paths
 
 
 def save_distribution_matrix(
@@ -21,7 +22,6 @@ def save_distribution_matrix(
     resolved_reducer = Reducer(reducer) if isinstance(reducer, str) else reducer
     path = paths(config).distribution_map_by_key(parameter_key, resolved_reducer)
     path.parent.mkdir(parents=True, exist_ok=True)
-
     pd.DataFrame(matrix).to_csv(path, index=False)
     return path
 
@@ -48,26 +48,20 @@ def save_distribution_matrices(
 
 def save_raw_distribution_long(
     config: AppConfig,
-    buckets: DistributionBuckets,
-    file_stem: str = "distribution_raw_long",
+    grids: Mapping[str, list],
 ) -> dict[str, Path]:
     """
-    Сохраняет исходные значения распределений в long-формате в каталоге matrices/.
+    Сохраняет исходные значения распределений в long-формате.
+
+    Args:
+        config: конфиг с путями события.
+        grids: сетки по ключу колонки (H_f, Beta, J_a, ...).
     """
 
     resolver = paths(config)
     saved_paths: dict[str, Path] = {}
-    parameter_grids = {
-        "H_f": buckets.hf,
-        "H_a": buckets.ha,
-        "H_r": buckets.hr,
-        "G_f": buckets.gf,
-        "G_a": buckets.ga,
-        "G_r": buckets.gr,
-    }
-
-    for parameter_key, grid in parameter_grids.items():
-        path = resolver.matrices_dir / f"{file_stem}_{parameter_key}.parquet"
+    for parameter_key, grid in grids.items():
+        path = resolver.distribution_raw_long_by_key(parameter_key)
         path.parent.mkdir(parents=True, exist_ok=True)
         rows: list[dict[str, float | int | str]] = []
         for l_index, l_row in enumerate(grid):
@@ -83,5 +77,4 @@ def save_raw_distribution_long(
                     )
         pd.DataFrame(rows, columns=["parameter", "L_bin", "MLT_bin", "value"]).to_parquet(path, index=False)
         saved_paths[parameter_key] = path
-
     return saved_paths

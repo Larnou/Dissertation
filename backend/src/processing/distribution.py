@@ -1,13 +1,13 @@
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from math import floor
-from typing import Callable, Iterable, Literal
 
 import numpy as np
 import pandas as pd
 
+from backend.src.io.names import Reducer
 from backend.src.log import progress_bar
 
-Reducer = Literal["mean", "std", "median", "q25", "q75"]
 Grid = list[list[list[float]]]
 
 
@@ -23,6 +23,24 @@ class DistributionBuckets:
     ja: Grid
     jf: Grid
     jr: Grid
+
+    def as_grids(self) -> dict[str, Grid]:
+        """
+        Сетки по ключам колонок, тем же что в Distributions.build_maps.
+        """
+
+        return {
+            "H_f": self.hf,
+            "H_a": self.ha,
+            "H_r": self.hr,
+            "G_f": self.gf,
+            "G_a": self.ga,
+            "G_r": self.gr,
+            "Beta": self.beta,
+            "J_f": self.jf,
+            "J_a": self.ja,
+            "J_r": self.jr,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,7 +101,7 @@ class Distributions:
                 ga[l_index][r_index].append(float(row.G_a))
                 gr[l_index][r_index].append(float(row.G_r))
                 beta[l_index][r_index].append(float(row.beta))
-                ja[l_index][r_index].append(float(row.J_a))
+                jf[l_index][r_index].append(float(row.J_f))
                 jr[l_index][r_index].append(float(row.J_r))
                 ja[l_index][r_index].append(float(row.J_a))
 
@@ -94,11 +112,11 @@ class Distributions:
         distribution = np.full((self.lshell_range, self.radian_range), -1.0, dtype=float)
 
         reducers: dict[Reducer, Callable[[list[float]], float]] = {
-            "mean": np.mean,
-            "std": np.std,
-            "median": np.median,
-            "q25": lambda values: float(np.quantile(values, 0.25)),
-            "q75": lambda values: float(np.quantile(values, 0.75)),
+            Reducer.MEAN: np.mean,
+            Reducer.STD: np.std,
+            Reducer.MEDIAN: np.median,
+            Reducer.Q25: lambda values: float(np.quantile(values, 0.25)),
+            Reducer.Q75: lambda values: float(np.quantile(values, 0.75)),
         }
         reducer_fn = reducers[reducer]
 
@@ -111,7 +129,7 @@ class Distributions:
 
         return distribution
 
-    def build_maps(self, buckets: DistributionBuckets, reducer: Reducer = "mean") -> dict[str, np.ndarray]:
+    def build_maps(self, buckets: DistributionBuckets, reducer: Reducer = Reducer.MEAN) -> dict[str, np.ndarray]:
         return {
             "H_f": self.reduce(buckets.hf, reducer),
             "H_a": self.reduce(buckets.ha, reducer),

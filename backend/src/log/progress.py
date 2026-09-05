@@ -1,5 +1,5 @@
 """
-Единая настройка логирования и прогресс-баров.
+Единый progress-bar в стиле строк лога.
 """
 
 from collections.abc import Iterable
@@ -7,16 +7,11 @@ from datetime import UTC, datetime
 import sys
 from typing import Any, TypeVar
 
-from loguru import logger
 from tqdm.auto import tqdm
 
-T = TypeVar("T")
+from backend.src.log.setup import ensure_logging
 
-LOG_FORMAT = (
-    "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-    "<level>{level: <7}</level> | "
-    "<level>{message}</level>"
-)
+T = TypeVar("T")
 
 TQDM_DEFAULTS: dict[str, Any] = {
     "ncols": 100,
@@ -25,8 +20,6 @@ TQDM_DEFAULTS: dict[str, Any] = {
     "mininterval": 0.1,
     "file": sys.stdout,
 }
-
-_configured = False
 
 
 def format_progress_description(desc: str) -> str:
@@ -38,39 +31,6 @@ def format_progress_description(desc: str) -> str:
     return f"{timestamp} | INFO | {desc}"
 
 
-def setup_logging(level: str = "INFO") -> None:
-    """
-    Настраивает единый формат loguru для всего проекта.
-    """
-
-    global _configured
-
-    normalized_level = level.strip().upper()
-    logger.remove()
-    logger.add(
-        sys.stdout,
-        level=normalized_level,
-        format=LOG_FORMAT,
-        backtrace=False,
-        diagnose=False,
-    )
-    _configured = True
-
-
-def _ensure_logging() -> None:
-    if not _configured:
-        setup_logging()
-
-
-def get_logger():
-    """
-    Возвращает настроенный logger loguru.
-    """
-
-    _ensure_logging()
-    return logger
-
-
 def progress_bar(iterable: Iterable[T], desc: str, **kwargs: Any) -> tqdm:
     """
     Единый progress-bar для долгих операций.
@@ -80,7 +40,7 @@ def progress_bar(iterable: Iterable[T], desc: str, **kwargs: Any) -> tqdm:
             ...
     """
 
-    _ensure_logging()
+    ensure_logging()
     options = {**TQDM_DEFAULTS, **kwargs}
     options.setdefault(
         "bar_format",

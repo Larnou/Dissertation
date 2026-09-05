@@ -4,16 +4,22 @@ import re
 
 import pandas as pd
 
-KYOTO_SYMH_LINE_TIME_PATTERN = re.compile(r"^\S+\s+\S*?(?P<date>\d{6})D(?P<hour>\d{2})ASY")
+# WDC Kyoto: колонка 19 = H/D, колонки 22-24 = SYM/ASY. SYM-H — это HhhSYM, не DhhASY (ASY-D).
+KYOTO_SYMH_LINE_TIME_PATTERN = re.compile(r"^\S+\s+\S*?(?P<date>\d{6})H(?P<hour>\d{2})SYM")
 KYOTO_SYMH_VALUES_PER_HOUR = 60
+KYOTO_SYMH_MISSING_VALUE = 99999
 
 
 def parse_kyoto_symh_file(path: Path) -> pd.DataFrame:
     """
-    Reads one Kyoto SYM-H `.txt` file into a minute-resolution DataFrame.
+    Читает один файл Kyoto SYM-H (`.txt`) в поминутную таблицу.
 
-    Each data line contains a YYMMDD/hour marker and 60 minute values. Kyoto
-    appends an additional summary value at the end of the line, which is ignored.
+    Берёт только строки с маркером `HhhSYM`. В каждой такой строке 60 минутных
+    значений в нТл и часовое среднее в конце; среднее отбрасывается.
+    Код 99999 считается пропуском.
+
+    Args:
+        path: путь к файлу в формате WDC ASY/SYM.
     """
 
     rows: list[dict[str, object]] = []
@@ -40,7 +46,10 @@ def parse_kyoto_symh_file(path: Path) -> pd.DataFrame:
 
 def read_kyoto_symh_directory(input_dir: Path) -> pd.DataFrame:
     """
-    Reads all Kyoto SYM-H `*.txt` files from a directory into one DataFrame.
+    Собирает все `*.txt` из каталога в одну поминутную таблицу SYM-H.
+
+    Args:
+        input_dir: каталог с исходниками WDC ASY/SYM.
     """
 
     input_dir = Path(input_dir)
@@ -54,7 +63,11 @@ def read_kyoto_symh_directory(input_dir: Path) -> pd.DataFrame:
 
 def save_kyoto_symh_to_parquet(dataframe: pd.DataFrame, output_path: Path) -> None:
     """
-    Saves a Kyoto SYM-H DataFrame as parquet.
+    Сохраняет таблицу SYM-H в parquet.
+
+    Args:
+        dataframe: колонки Time и SYMH.
+        output_path: путь к `symh.parquet`.
     """
 
     output_path = Path(output_path)
@@ -79,6 +92,7 @@ def _normalize_kyoto_symh_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
     result = dataframe.loc[:, ["Time", "SYMH"]].copy()
     result["Time"] = pd.to_datetime(result["Time"])
     result["SYMH"] = pd.to_numeric(result["SYMH"], errors="coerce")
+    result.loc[result["SYMH"] == KYOTO_SYMH_MISSING_VALUE, "SYMH"] = pd.NA
     result = result.dropna(subset=["Time", "SYMH"])
     result = result.drop_duplicates(subset=["Time"])
     result = result.sort_values("Time").reset_index(drop=True)
